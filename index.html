@@ -94,6 +94,37 @@ overflow-y:auto;
 .chat-panel textarea{
 margin-top:8px;
 }
+.modal-backdrop{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.45);
+backdrop-filter:blur(8px);
+-webkit-backdrop-filter:blur(8px);
+display:none;
+align-items:center;
+justify-content:center;
+z-index:1000;
+}
+
+.auth-panel{
+width:100%;
+max-width:380px;
+border:1px solid rgba(255,255,255,.12);
+}
+
+.auth-panel h3{
+margin-top:0;
+text-align:center;
+}
+
+.auth-panel input{
+margin-bottom:10px;
+}
+
+.auth-panel button{
+width:100%;
+margin-top:8px;
+}
             
 </style>
 </head>
@@ -173,13 +204,14 @@ margin-top:8px;
 </div>
 
 <div class="modal-backdrop" id="authModal">
-<div class="panel" style="max-width:400px">
-<h3>Вход</h3>
+<div class="panel auth-panel">
+<h3>Вход в поддержку</h3>
 <input id="email" placeholder="Email">
 <input id="pass" type="password" placeholder="Пароль">
 <button id="doLogin" class="btn">Войти</button>
 </div>
 </div>
+
 
 <script>
 const firebaseConfig={

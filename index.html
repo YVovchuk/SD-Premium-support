@@ -125,6 +125,24 @@ margin-bottom:10px;
 width:100%;
 margin-top:8px;
 }
+.user-box{
+display:flex;
+align-items:center;
+gap:10px;
+}
+
+.avatar{
+width:36px;
+height:36px;
+border-radius:50%;
+background:linear-gradient(135deg,#8b5cf6,#06b6d4);
+display:flex;
+align-items:center;
+justify-content:center;
+font-weight:700;
+color:#fff;
+text-transform:uppercase;
+}
             
 </style>
 </head>
@@ -136,7 +154,8 @@ margin-top:8px;
 <div class="logo">SD</div>
 <div><b>SD Premium</b><div class="small">Панель поддержки</div></div>
 </div>
-<div style="display:flex;gap:10px;align-items:center">
+<div class="user-box">
+<div class="avatar" id="avatar">?</div>
 <div id="staffName" class="staff-box">Гость</div>
 <button id="logoutBtn" class="btn gray" style="display:none">Выйти</button>
 </div>
@@ -272,13 +291,16 @@ logoutBtn.style.display="inline-block";
 authModal.style.display="none";
 
 const doc = await db.collection("users").doc(u.uid).get();
-staffName.textContent = doc.exists ? doc.data().name : u.email;
+const name = doc.exists ? doc.data().name : u.email;
+staffName.textContent = name;
+avatar.textContent = name[0] || "?";
 loadTickets();
 }else{
 logoutBtn.style.display="none";
 authModal.style.display="flex";
 ticketsList.innerHTML="";
-staffName.textContent="Гость";
+staffName.textContent = "Гость";
+avatar.textContent = "?";
 }
 });
 

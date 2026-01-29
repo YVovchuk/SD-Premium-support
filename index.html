@@ -94,18 +94,7 @@ overflow-y:auto;
 .chat-panel textarea{
 margin-top:8px;
 }
-.delete-comment{
-float:right;
-cursor:pointer;
-color:#ef4444;
-font-weight:700;
-margin-left:8px;
-}
-.delete-comment:hover{
-opacity:.7;
-}
-
-
+            
 </style>
 </head>
 <body>
@@ -313,7 +302,7 @@ openTicket(uid,id,doc.data(),tvUser.textContent.replace("От: ",""));
 }
 }
 
-async function openTicket(uid,id,t,uname){
+function openTicket(uid,id,t,uname){
 currentTicket={uid,id};
 lastOpenedTicketId=id;
 ticketView.style.display="block";
@@ -325,49 +314,13 @@ tvMeta.textContent=t.status;
 tvDesc.textContent=t.desc;
 statusSelect.value=t.status||"Новая";
 
-tvComments.innerHTML = "";
-
-const snap = await db
-.collection("users")
-.doc(uid)
-.collection("tickets")
-.doc(id)
-.collection("comments")
-.orderBy("at")
-.get();
-
-snap.forEach(d=>{
-const c = d.data();
-
-const div = document.createElement("div");
-div.className = "comment";
-div.innerHTML = `
-<div class="small">
-${c.byName} ${c.role==="staff" ? "<span class='staff'>(поддержка)</span>" : ""}
-· ${new Date(c.at).toLocaleString()}
-<span class="delete-comment" data-id="${d.id}">✖</span>
-</div>
-<div>${c.text}</div>
-`;
-
-div.querySelector(".delete-comment").onclick = async () => {
-if(!confirm("Удалить комментарий?")) return;
-
-await db
-.collection("users")
-.doc(uid)
-.collection("tickets")
-.doc(id)
-.collection("comments")
-.doc(d.id)
-.delete();
-
-div.remove();
-};
-
+tvComments.innerHTML="";
+(t.comments||[]).forEach(c=>{
+const div=document.createElement("div");
+div.className="comment";
+div.innerHTML=`<div class="small">${c.byName||"Пользователь"} ${c.role==="staff"?"<span class='staff'>(поддержка)</span>":""} · ${new Date(c.at).toLocaleString()}</div><div>${c.text}</div>`;
 tvComments.appendChild(div);
 });
-
 
 tvAttach.innerHTML="";
 (t.attachments||[]).forEach(a=>{
@@ -383,41 +336,23 @@ tvAttach.appendChild(d);
 });
 }
 
-sendReply.onclick = async () => {
+sendReply.onclick=async()=>{
 if(!currentTicket) return;
-
-const text = replyText.value.trim();
+const text=replyText.value.trim();
 if(!text) return;
-
-// 1️⃣ добавляем комментарий
-await db
-.collection("users")
-.doc(currentTicket.uid)
-.collection("tickets")
-.doc(currentTicket.id)
-.collection("comments")
-.add({
+await db.collection("users").doc(currentTicket.uid).collection("tickets").doc(currentTicket.id).update({
+comments:firebase.firestore.FieldValue.arrayUnion({
 text,
-at: new Date().toISOString(),
-role: "staff",
-byName: staffName.textContent
+at:new Date().toISOString(),
+role:"staff",
+byName:staffName.textContent
+}),
+lastReplyRole:"staff",
+status:"В работе"
 });
-
-// 2️⃣ обновляем заявку
-await db
-.collection("users")
-.doc(currentTicket.uid)
-.collection("tickets")
-.doc(currentTicket.id)
-.update({
-lastReplyRole: "staff",
-status: "В работе"
-});
-
-replyText.value = "";
+replyText.value="";
 toast("Ответ отправлен");
 };
-
 
 saveStatusBtn.onclick=async()=>{
 if(!currentTicket) return;

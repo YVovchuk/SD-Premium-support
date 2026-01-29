@@ -94,7 +94,18 @@ overflow-y:auto;
 .chat-panel textarea{
 margin-top:8px;
 }
-            
+.delete-comment{
+float:right;
+cursor:pointer;
+color:#ef4444;
+font-weight:700;
+margin-left:8px;
+}
+.delete-comment:hover{
+opacity:.7;
+}
+
+
 </style>
 </head>
 <body>
@@ -314,13 +325,49 @@ tvMeta.textContent=t.status;
 tvDesc.textContent=t.desc;
 statusSelect.value=t.status||"Новая";
 
-tvComments.innerHTML="";
-(t.comments||[]).forEach(c=>{
-const div=document.createElement("div");
-div.className="comment";
-div.innerHTML=`<div class="small">${c.byName||"Пользователь"} ${c.role==="staff"?"<span class='staff'>(поддержка)</span>":""} · ${new Date(c.at).toLocaleString()}</div><div>${c.text}</div>`;
+tvComments.innerHTML = "";
+
+const snap = await db
+.collection("users")
+.doc(uid)
+.collection("tickets")
+.doc(id)
+.collection("comments")
+.orderBy("at")
+.get();
+
+snap.forEach(d=>{
+const c = d.data();
+
+const div = document.createElement("div");
+div.className = "comment";
+div.innerHTML = `
+<div class="small">
+${c.byName} ${c.role==="staff" ? "<span class='staff'>(поддержка)</span>" : ""}
+· ${new Date(c.at).toLocaleString()}
+<span class="delete-comment" data-id="${d.id}">✖</span>
+</div>
+<div>${c.text}</div>
+`;
+
+div.querySelector(".delete-comment").onclick = async () => {
+if(!confirm("Удалить комментарий?")) return;
+
+await db
+.collection("users")
+.doc(uid)
+.collection("tickets")
+.doc(id)
+.collection("comments")
+.doc(d.id)
+.delete();
+
+div.remove();
+};
+
 tvComments.appendChild(div);
 });
+
 
 tvAttach.innerHTML="";
 (t.attachments||[]).forEach(a=>{

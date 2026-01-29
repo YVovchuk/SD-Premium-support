@@ -263,26 +263,25 @@ document.body.appendChild(d);
 setTimeout(()=>d.remove(),3000);
 }
 
-loginBtn.onclick=()=>authModal.style.display="flex";
 doLogin.onclick=()=>auth.signInWithEmailAndPassword(email.value,pass.value);
 logoutBtn.onclick=()=>auth.signOut();
 
 auth.onAuthStateChanged(async u=>{
 if(u){
-loginBtn.style.display="none";
 logoutBtn.style.display="inline-block";
 authModal.style.display="none";
-const doc=await db.collection("users").doc(u.uid).get();
-staffName.textContent=doc.exists?doc.data().name:u.email;
+
+const doc = await db.collection("users").doc(u.uid).get();
+staffName.textContent = doc.exists ? doc.data().name : u.email;
 loadTickets();
 }else{
-loginBtn.style.display="none";
 logoutBtn.style.display="none";
 authModal.style.display="flex";
 ticketsList.innerHTML="";
 staffName.textContent="Гость";
 }
 });
+
 
 refreshBtn.onclick=()=>loadTickets();
 statusFilter.onchange=()=>loadTickets();

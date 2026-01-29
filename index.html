@@ -89,8 +89,14 @@ border:1px solid #8b5cf6;
 max-height:calc(100vh - 140px);
 overflow-y:auto;
 }
+.chat-panel{
+max-height:calc(100vh - 140px);
+overflow-y:auto;
+}
+.chat-panel textarea{
+margin-top:8px;
+}
             
-  
 </style>
 </head>
 <body>
@@ -123,7 +129,7 @@ overflow-y:auto;
 <div id="ticketsList"></div>
 </div>
 
-<div class="panel">
+<div class="panel chat-panel">
 <div id="empty"><div class="small">Выберите заявку</div></div>
 
 <div id="ticketView" style="display:none">

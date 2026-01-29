@@ -156,7 +156,7 @@ text-transform:uppercase;
 <div><b>SD Premium</b><div class="small">Панель поддержки</div></div>
 </div>
 <div class="user-box">
-  <button id="staffBtn" class="btn gray">Сотрудники</button>
+<button id="staffBtn" class="btn gray" style="display:none">Сотрудники</button>
   <div class="avatar" id="avatar">?</div>
   <div id="staffName" class="staff-box">Гость</div>
   <button id="logoutBtn" class="btn gray" style="display:none">Выйти</button>
@@ -294,8 +294,9 @@ logoutBtn.onclick=()=>auth.signOut();
 
 auth.onAuthStateChanged(async u=>{
 if(u){
-logoutBtn.style.display="inline-block";
-authModal.style.display="none";
+  logoutBtn.style.display = "inline-block";
+  staffBtn.style.display = "inline-block";
+  authModal.style.display = "none";
 
 const doc = await db.collection("users").doc(u.uid).get();
 const name = doc.exists ? doc.data().name : u.email;
@@ -303,8 +304,9 @@ staffName.textContent = name;
 avatar.textContent = name[0] || "?";
 loadTickets();
 }else{
-logoutBtn.style.display="none";
-authModal.style.display="flex";
+  logoutBtn.style.display = "none";
+  staffBtn.style.display = "none";
+  authModal.style.display = "flex";
 ticketsList.innerHTML="";
 staffName.textContent = "Гость";
 avatar.textContent = "?";

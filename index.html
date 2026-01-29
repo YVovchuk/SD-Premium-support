@@ -14,71 +14,112 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
 <style>
-:root{--bg:#070507;--card:#0f0e10;--muted:#9b98a3;--accent:linear-gradient(90deg,#8b5cf6,#06b6d4);--ok:#10b981;font-family:Inter}
-body{margin:0;background:var(--bg);color:#fff;padding:20px}
-.wrap{max-width:1200px;margin:auto}
-.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
-.logo{width:52px;height:52px;border-radius:12px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800}
-.grid{display:grid;grid-template-columns:320px 1fr;gap:14px}
-.panel{background:var(--card);border-radius:12px;padding:14px}
-.ticket{padding:10px;border-radius:10px;background:rgba(255,255,255,.03);margin-bottom:8px;cursor:pointer}
-.btn{background:var(--accent);border:0;color:#fff;padding:8px 12px;border-radius:8px;font-weight:600;cursor:pointer}
-.btn.secondary{background:#151319}
-.small{color:var(--muted);font-size:13px}
+:root{
+--bg:#070507;
+--card:#0f0e10;
+--muted:#9b98a3;
+--accent:linear-gradient(90deg,#8b5cf6,#06b6d4);
+--ok:#22c55e;
+--radius:14px;
+--shadow:0 6px 30px rgba(2,2,6,.6);
+font-family:Inter;
+color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg);color:#fff;display:flex;justify-content:center;padding:28px}
+.wrap{max-width:1200px;width:100%}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.brand{display:flex;gap:14px;align-items:center}
+.logo{width:56px;height:56px;border-radius:12px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800}
+.user{display:flex;gap:12px;align-items:center}
+.avatar{width:42px;height:42px;border-radius:10px;background:#141217;border:1px solid rgba(255,255,255,.05);overflow:hidden}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+.grid{display:grid;grid-template-columns:360px 1fr;gap:18px}
+.btn{border:0;padding:10px 16px;border-radius:12px;font-weight:600;cursor:pointer;background:var(--accent);color:#fff}
+.btn.secondary{background:#151319;border:1px solid rgba(255,255,255,.08)}
+.small{font-size:13px;color:var(--muted)}
+.ticket{padding:12px;border-radius:12px;background:rgba(255,255,255,.03);margin-bottom:8px;cursor:pointer}
+.ticket.active{outline:2px solid #8b5cf6}
+.filters{display:flex;gap:8px;margin-bottom:10px}
+select,input,textarea{
+background:#141217;border:1px solid rgba(255,255,255,.08);
+color:#fff;padding:8px;border-radius:8px;width:100%
+}
+.comment{background:rgba(255,255,255,.04);padding:10px;border-radius:10px;margin-bottom:8px}
 .staff{color:var(--ok);font-weight:700}
-.comment{background:rgba(255,255,255,.05);padding:8px;border-radius:8px;margin-bottom:6px}
-img.avatar{width:32px;height:32px;border-radius:50%;vertical-align:middle;margin-right:6px}
-select{background:#141217;color:#fff;border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:4px}
+.file-link{display:inline-block;margin-top:6px;color:#8b5cf6}
 </style>
 </head>
 <body>
 
 <div class="wrap">
-<div class="top">
-<div style="display:flex;gap:10px;align-items:center">
+
+<div class="topbar">
+<div class="brand">
 <div class="logo">SD</div>
-<b>Панель поддержки</b>
-</div>
 <div>
+<b>SD Premium</b>
+<div class="small">Панель поддержки</div>
+</div>
+</div>
+<div class="user">
+<div id="staffName">Гость</div>
 <button id="loginBtn" class="btn secondary">Войти</button>
 <button id="logoutBtn" class="btn secondary" style="display:none">Выйти</button>
 </div>
 </div>
 
 <div class="grid">
-<div class="panel">
-<input id="search" placeholder="Поиск..." style="width:100%;margin-bottom:10px">
+<div class="card">
+<div class="filters">
+<select id="statusFilter">
+<option value="all">Все</option>
+<option value="Новая">Новая</option>
+<option value="В работе">В работе</option>
+<option value="Решена">Решена</option>
+<option value="Архив">Архив</option>
+</select>
+<input id="search" placeholder="Поиск по теме или имени">
+</div>
 <div id="tickets"></div>
 </div>
 
-<div class="panel">
-<div id="empty">Выберите заявку</div>
-<div id="view" style="display:none">
-<h3 id="tTitle"></h3>
+<div class="card">
+<div id="emptyView" class="small">Выберите заявку слева</div>
+<div id="ticketView" style="display:none">
+<h3 id="tSubject"></h3>
 <div class="small" id="tMeta"></div>
-<div id="tDesc" style="margin:10px 0"></div>
 
-<label>Статус:
+<div style="margin-top:12px">
+<strong>Описание</strong>
+<div id="tDesc" style="margin-top:6px"></div>
+<div id="tFile"></div>
+</div>
+
+<div style="margin-top:14px">
+<strong>Комментарии</strong>
+<div id="comments"></div>
+</div>
+
+<div style="margin-top:12px">
+<textarea id="replyText" placeholder="Ответ поддержки..."></textarea>
+<input type="file" id="replyFile">
+</div>
+
+<div style="display:flex;gap:8px;margin-top:10px">
 <select id="statusSelect">
+<option>Новая</option>
 <option>В работе</option>
 <option>Решена</option>
 <option>Архив</option>
 </select>
-</label>
-
-<h4>Комментарии</h4>
-<div id="comments"></div>
-
-<textarea id="replyText" placeholder="Ответ..." style="width:100%;min-height:80px"></textarea>
-<input type="file" id="replyFile">
-
-<div style="margin-top:8px;display:flex;gap:8px">
 <button id="sendReply" class="btn">Ответить</button>
 <button id="deleteBtn" class="btn secondary">Удалить</button>
 </div>
 </div>
 </div>
 </div>
+
 </div>
 
 <script>
@@ -91,24 +132,29 @@ firebase.initializeApp(firebaseConfig);
 const auth=firebase.auth();
 const db=firebase.firestore();
 
+const loginBtn=document.getElementById('loginBtn');
+const logoutBtn=document.getElementById('logoutBtn');
+const staffName=document.getElementById('staffName');
 const ticketsEl=document.getElementById('tickets');
-const view=document.getElementById('view');
-const empty=document.getElementById('empty');
-const tTitle=document.getElementById('tTitle');
+const emptyView=document.getElementById('emptyView');
+const ticketView=document.getElementById('ticketView');
+const tSubject=document.getElementById('tSubject');
 const tMeta=document.getElementById('tMeta');
 const tDesc=document.getElementById('tDesc');
+const tFile=document.getElementById('tFile');
 const commentsEl=document.getElementById('comments');
 const replyText=document.getElementById('replyText');
 const replyFile=document.getElementById('replyFile');
 const sendReply=document.getElementById('sendReply');
 const deleteBtn=document.getElementById('deleteBtn');
 const statusSelect=document.getElementById('statusSelect');
-const loginBtn=document.getElementById('loginBtn');
-const logoutBtn=document.getElementById('logoutBtn');
+const statusFilter=document.getElementById('statusFilter');
+const search=document.getElementById('search');
 
 let currentUser=null;
-let currentDoc=null;
-let selectedTicket=null;
+let staffDoc=null;
+let allTickets=[];
+let selected=null;
 
 loginBtn.onclick=()=>auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
 logoutBtn.onclick=()=>auth.signOut();
@@ -117,42 +163,76 @@ auth.onAuthStateChanged(async u=>{
 currentUser=u;
 if(u){
 loginBtn.style.display='none';
-logoutBtn.style.display='inline-block';
-const d=await db.collection('users').doc(u.uid).get();
-currentDoc=d.data();
-if(!currentDoc?.isStaff){alert("Нет доступа");return;}
+logoutBtn.style.display='inline-flex';
+const doc=await db.collection('users').doc(u.uid).get();
+staffDoc=doc.data();
+if(!staffDoc?.isStaff){alert("Нет доступа");return;}
+staffName.textContent=staffDoc.name||u.email;
 loadTickets();
 }else{
-loginBtn.style.display='inline-block';
+loginBtn.style.display='inline-flex';
 logoutBtn.style.display='none';
+staffName.textContent="Гость";
 }
 });
 
 async function loadTickets(){
+allTickets=[];
 ticketsEl.innerHTML='';
 const users=await db.collection('users').get();
 for(const u of users.docs){
+const userData=u.data();
 const snap=await db.collection('users').doc(u.id).collection('tickets').get();
-snap.forEach(doc=>{
-const t=doc.data();
-const div=document.createElement('div');
-div.className='ticket';
-div.innerHTML=`<b>${t.subject}</b><div class="small">${t.userName||'Пользователь'} · ${t.status||'В работе'}</div>`;
-div.onclick=()=>openTicket(doc.id,u.id,t);
-ticketsEl.appendChild(div);
+snap.forEach(d=>{
+const t=d.data();
+allTickets.push({
+id:d.id,
+uid:u.id,
+subject:t.subject,
+desc:t.desc,
+status:t.status||'Новая',
+createdAt:t.createdAt,
+comments:t.comments||[],
+file:t.file||null,
+userName:userData.name||'Без имени',
+userAvatar:userData.avatar||null
+});
 });
 }
+renderTickets();
 }
 
-function openTicket(id,uid,data){
-selectedTicket={id,uid};
-view.style.display='block';
-empty.style.display='none';
-tTitle.textContent=data.subject;
-tDesc.textContent=data.desc;
-tMeta.textContent=data.userName;
-statusSelect.value=data.status||'В работе';
-renderComments(data.comments||[]);
+function renderTickets(){
+ticketsEl.innerHTML='';
+const f=statusFilter.value;
+const q=search.value.toLowerCase();
+allTickets
+.filter(t=>(f==='all'||t.status===f))
+.filter(t=>t.subject.toLowerCase().includes(q)||t.userName.toLowerCase().includes(q))
+.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))
+.forEach(t=>{
+const d=document.createElement('div');
+d.className='ticket'+(selected&&selected.id===t.id?' active':'');
+d.innerHTML=`<b>${t.subject}</b>
+<div class="small">${t.userName} · ${t.status}</div>`;
+d.onclick=()=>openTicket(t);
+ticketsEl.appendChild(d);
+});
+}
+
+function openTicket(t){
+selected=t;
+emptyView.style.display='none';
+ticketView.style.display='block';
+tSubject.textContent=t.subject;
+tMeta.textContent=t.userName+" · "+t.status;
+tDesc.textContent=t.desc;
+statusSelect.value=t.status;
+renderComments(t.comments);
+if(t.file){
+tFile.innerHTML=`<a href="${t.file}" target="_blank" class="file-link">📎 Вложение пользователя</a>`;
+}else tFile.innerHTML='';
+renderTickets();
 }
 
 function renderComments(arr){
@@ -161,41 +241,31 @@ arr.forEach(c=>{
 const d=document.createElement('div');
 d.className='comment';
 d.innerHTML=`
-<div class="small">
-${c.avatar?`<img src="${c.avatar}" class="avatar">`:''}
-${c.byName||'Пользователь'} ${c.role==='staff'?'<span class="staff">(Сотрудник поддержки)</span>':''}
-</div>
+<div class="small">${c.byName||'Пользователь'} ${c.role==='staff'?'<span class="staff">(Сотрудник поддержки)</span>':''}</div>
 <div>${c.text}</div>
-${c.file?`<a href="${c.file}" target="_blank">📎 Вложение</a>`:''}
+${c.file?`<a href="${c.file}" target="_blank" class="file-link">📎 Вложение</a>`:''}
 `;
 commentsEl.appendChild(d);
 });
 }
 
 sendReply.onclick=async()=>{
-if(!selectedTicket)return;
-let fileData=null;
+if(!selected)return;
+let file=null;
 if(replyFile.files[0]){
 const r=new FileReader();
-r.onload=async()=>{
-fileData=r.result;
-await sendComment(fileData);
-};
+r.onload=async()=>{file=r.result;await sendComment(file)};
 r.readAsDataURL(replyFile.files[0]);
-}else{
-await sendComment(null);
-}
+}else await sendComment(null);
 };
 
 async function sendComment(file){
-const ref=db.collection('users').doc(selectedTicket.uid).collection('tickets').doc(selectedTicket.id);
-const snap=await ref.get();
-const t=snap.data();
+const ref=db.collection('users').doc(selected.uid).collection('tickets').doc(selected.id);
 const c={
 text:replyText.value,
 at:new Date().toISOString(),
-byName:currentDoc.name,
-avatar:currentDoc.avatar||null,
+byName:staffDoc.name,
+avatar:staffDoc.avatar||null,
 role:'staff',
 file:file
 };
@@ -206,22 +276,24 @@ status:statusSelect.value
 replyText.value='';
 replyFile.value='';
 loadTickets();
-openTicket(selectedTicket.id,selectedTicket.uid,(await ref.get()).data());
 }
 
 deleteBtn.onclick=async()=>{
-if(!confirm("Удалить?"))return;
-await db.collection('users').doc(selectedTicket.uid).collection('tickets').doc(selectedTicket.id).delete();
-view.style.display='none';
-empty.style.display='block';
+if(!confirm("Удалить заявку?"))return;
+await db.collection('users').doc(selected.uid).collection('tickets').doc(selected.id).delete();
+ticketView.style.display='none';
+emptyView.style.display='block';
 loadTickets();
 };
 
 statusSelect.onchange=async()=>{
-const ref=db.collection('users').doc(selectedTicket.uid).collection('tickets').doc(selectedTicket.id);
+const ref=db.collection('users').doc(selected.uid).collection('tickets').doc(selected.id);
 await ref.update({status:statusSelect.value});
 loadTickets();
 };
+
+statusFilter.onchange=renderTickets;
+search.oninput=renderTickets;
 </script>
 </body>
 </html>

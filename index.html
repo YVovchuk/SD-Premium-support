@@ -125,12 +125,12 @@ margin-bottom:10px;
 width:100%;
 margin-top:8px;
 }
-<div class="user-box">
-  <button id="staffBtn" class="btn gray">Сотрудники</button>
-  <div class="avatar" id="avatar">?</div>
-  <div id="staffName" class="staff-box">Гость</div>
-  <button id="logoutBtn" class="btn gray" style="display:none">Выйти</button>
-</div>
+.user-box{
+display:flex;
+align-items:center;
+gap:10px;
+}
+
 
 .avatar{
 width:36px;
@@ -156,9 +156,10 @@ text-transform:uppercase;
 <div><b>SD Premium</b><div class="small">Панель поддержки</div></div>
 </div>
 <div class="user-box">
-<div class="avatar" id="avatar">?</div>
-<div id="staffName" class="staff-box">Гость</div>
-<button id="logoutBtn" class="btn gray" style="display:none">Выйти</button>
+  <button id="staffBtn" class="btn gray">Сотрудники</button>
+  <div class="avatar" id="avatar">?</div>
+  <div id="staffName" class="staff-box">Гость</div>
+  <button id="logoutBtn" class="btn gray" style="display:none">Выйти</button>
 </div>
 </div>
 
@@ -230,8 +231,13 @@ text-transform:uppercase;
 <button id="doLogin" class="btn">Войти</button>
 </div>
 </div>
-
-
+<div class="modal-backdrop" id="staffModal">
+  <div class="panel" style="max-width:420px;width:100%">
+    <h3>Сотрудники</h3>
+    <div id="staffList"></div>
+    <button id="closeStaff" class="btn gray" style="margin-top:10px">Закрыть</button>
+  </div>
+</div>
 <script>
 const firebaseConfig={
 apiKey:"AIzaSyAoTaDDCB-TUZzSlRuUKvnQ8QcJPQdERFE",
@@ -457,12 +463,5 @@ closeStaff.onclick = () => {
   staffModal.style.display = "none";
 };
 </script>
-            <div class="modal-backdrop" id="staffModal">
-  <div class="panel" style="max-width:420px;width:100%">
-    <h3>Сотрудники</h3>
-    <div id="staffList"></div>
-    <button id="closeStaff" class="btn gray" style="margin-top:10px">Закрыть</button>
-  </div>
-</div>
 </body>
 </html>

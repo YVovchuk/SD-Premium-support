@@ -341,12 +341,19 @@ if(!currentTicket) return;
 const text=replyText.value.trim();
 if(!text) return;
 await db.collection("users").doc(currentTicket.uid).collection("tickets").doc(currentTicket.id).update({
-comments:firebase.firestore.FieldValue.arrayUnion({
+await db
+.collection("users")
+.doc(currentTicket.uid)
+.collection("tickets")
+.doc(currentTicket.id)
+.collection("comments")
+.add({
 text,
-at:new Date().toISOString(),
-role:"staff",
-byName:staffName.textContent
-}),
+at: new Date().toISOString(),
+role: "staff",
+byName: staffName.textContent
+});
+,
 lastReplyRole:"staff",
 status:"В работе"
 });

@@ -52,13 +52,21 @@ input,textarea,select{background:#141217;border:1px solid rgba(255,255,255,.08);
 .comment{background:rgba(255,255,255,.04);padding:8px;border-radius:8px;margin-bottom:6px}
 .staff{color:#22c55e;font-weight:700}
 
-.attach a{color:#3b82f6;text-decoration:none}
+.attach img{max-width:180px;border-radius:8px;margin-top:6px;display:block}
 
 .toast{
 position:fixed;top:20px;right:20px;
 background:#111216;padding:12px 16px;
 border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.6);
 z-index:999;color:#fff
+}
+
+.counter{
+background:#ef4444;
+border-radius:999px;
+padding:2px 8px;
+font-size:12px;
+margin-left:6px
 }
 </style>
 </head>
@@ -79,11 +87,17 @@ z-index:999;color:#fff
 
 <div class="grid">
 <div class="panel">
-<div style="display:flex;gap:8px">
-<input id="search" placeholder="Поиск...">
-<button id="refreshBtn" class="btn gray">Обновить</button>
+<div style="display:flex;gap:8px;margin-bottom:8px">
+<select id="statusFilter">
+<option value="all">Все</option>
+<option value="Новая">Новая</option>
+<option value="В работе">В работе</option>
+<option value="Решена">Решена</option>
+<option value="Архив">Архив</option>
+</select>
+<button id="refreshBtn" class="btn gray">Обновить <span id="unreadCount" class="counter" style="display:none">0</span></button>
 </div>
-<div id="ticketsList" style="margin-top:12px"></div>
+<div id="ticketsList"></div>
 </div>
 
 <div class="panel">
@@ -173,6 +187,8 @@ const logoutBtn=document.getElementById("logoutBtn");
 const staffName=document.getElementById("staffName");
 
 const refreshBtn=document.getElementById("refreshBtn");
+const unreadCount=document.getElementById("unreadCount");
+const statusFilter=document.getElementById("statusFilter");
 
 const email=document.getElementById("email");
 const pass=document.getElementById("pass");
@@ -180,6 +196,7 @@ const doLogin=document.getElementById("doLogin");
 
 let currentTicket=null;
 let activeEl=null;
+let lastOpenedTicketId=null;
 
 function toast(t){
 const d=document.createElement("div");
@@ -209,9 +226,15 @@ ticketsList.innerHTML="<div class='small'>Войдите</div>";
 });
 
 refreshBtn.onclick=()=>loadTickets();
+statusFilter.onchange=()=>loadTickets();
+
+function isImage(url){
+return url.startsWith("data:image") || url.match(/\.(png|jpg|jpeg|gif|webp)$/i);
+}
 
 function loadTickets(){
 ticketsList.innerHTML="";
+let unread=0;
 db.collection("users").onSnapshot(async users=>{
 ticketsList.innerHTML="";
 for(const u of users.docs){
@@ -219,6 +242,10 @@ const uname=u.data().name||"Пользователь";
 const snap=await db.collection("users").doc(u.id).collection("tickets").orderBy("createdAt","desc").get();
 snap.forEach(d=>{
 const t=d.data();
+if(statusFilter.value!=="all" && t.status!==statusFilter.value) return;
+
+if(t.lastReplyRole==="user") unread++;
+
 const div=document.createElement("div");
 div.className="ticket "+(t.lastReplyRole==="user"?"new":"");
 div.innerHTML=`<h4>${t.subject}</h4><div class="small">${uname} · ${t.status||""}</div>`;
@@ -231,11 +258,26 @@ openTicket(u.id,d.id,t,uname);
 ticketsList.appendChild(div);
 });
 }
+unreadCount.style.display=unread? "inline-block":"none";
+unreadCount.textContent=unread;
+
+if(lastOpenedTicketId) reloadOpenTicket();
 });
+}
+
+async function reloadOpenTicket(){
+const uid=currentTicket?.uid;
+const id=currentTicket?.id;
+if(!uid||!id) return;
+const doc=await db.collection("users").doc(uid).collection("tickets").doc(id).get();
+if(doc.exists){
+openTicket(uid,id,doc.data(),tvUser.textContent.replace("От: ",""));
+}
 }
 
 function openTicket(uid,id,t,uname){
 currentTicket={uid,id};
+lastOpenedTicketId=id;
 ticketView.style.display="block";
 empty.style.display="none";
 
@@ -243,7 +285,6 @@ tvTitle.textContent=t.subject;
 tvUser.textContent="От: "+uname;
 tvMeta.textContent=t.status;
 tvDesc.textContent=t.desc;
-
 statusSelect.value=t.status||"Новая";
 
 tvComments.innerHTML="";
@@ -256,10 +297,14 @@ tvComments.appendChild(div);
 
 tvAttach.innerHTML="";
 (t.attachments||[]).forEach(a=>{
-const url = a.url || a.data;
+const url=a.url||a.data;
 const d=document.createElement("div");
 d.className="attach";
+if(isImage(url)){
+d.innerHTML=`<img src="${url}">`;
+}else{
 d.innerHTML=`📎 <a href="${url}" target="_blank">${a.name}</a>`;
+}
 tvAttach.appendChild(d);
 });
 }

@@ -313,7 +313,7 @@ openTicket(uid,id,doc.data(),tvUser.textContent.replace("От: ",""));
 }
 }
 
-function openTicket(uid,id,t,uname){
+async function openTicket(uid,id,t,uname){
 currentTicket={uid,id};
 lastOpenedTicketId=id;
 ticketView.style.display="block";
@@ -383,11 +383,13 @@ tvAttach.appendChild(d);
 });
 }
 
-sendReply.onclick=async()=>{
+sendReply.onclick = async () => {
 if(!currentTicket) return;
-const text=replyText.value.trim();
+
+const text = replyText.value.trim();
 if(!text) return;
-await db.collection("users").doc(currentTicket.uid).collection("tickets").doc(currentTicket.id).update({
+
+// 1️⃣ добавляем комментарий
 await db
 .collection("users")
 .doc(currentTicket.uid)
@@ -400,13 +402,22 @@ at: new Date().toISOString(),
 role: "staff",
 byName: staffName.textContent
 });
-,
-lastReplyRole:"staff",
-status:"В работе"
+
+// 2️⃣ обновляем заявку
+await db
+.collection("users")
+.doc(currentTicket.uid)
+.collection("tickets")
+.doc(currentTicket.id)
+.update({
+lastReplyRole: "staff",
+status: "В работе"
 });
-replyText.value="";
+
+replyText.value = "";
 toast("Ответ отправлен");
 };
+
 
 saveStatusBtn.onclick=async()=>{
 if(!currentTicket) return;

@@ -1,291 +1,551 @@
 <!doctype html>
 <html lang="ru">
 <head>
-<meta charset="utf-8">
-<title>SD Premium — Панель поддержки</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<style>
-body{margin:0;background:#070507;color:#fff;font-family:Inter}
-header{padding:16px 24px;background:#0f0e10;display:flex;justify-content:space-between;align-items:center}
-main{display:grid;grid-template-columns:320px 1fr;height:calc(100vh - 64px)}
-aside{border-right:1px solid #222;padding:12px;overflow:auto}
-.ticket{padding:10px;border-radius:10px;background:#141217;margin-bottom:8px;cursor:pointer}
-.ticket:hover{background:#1b1a1d}
-section{padding:20px;overflow:auto}
-.comment{padding:10px;border-radius:10px;margin-bottom:8px;background:#141217}
-.comment.staff{border-left:4px solid #10b981}
-.small{color:#9b98a3;font-size:13px}
-input,textarea,button{background:#141217;border:1px solid #333;color:#fff;border-radius:8px;padding:8px}
-button{cursor:pointer}
-.staff-label{color:#10b981;font-weight:600;margin-left:6px}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center}
-.modal>div{background:#0f0e10;padding:20px;border-radius:12px;width:320px}
-.empty{color:#9b98a3;padding:12px}
-.error{color:#ff7b7b;padding:12px}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SD Premium — Личный кабинет</title>
+
+  <!-- Google fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <style>
+    /* === ВЕРНУТ ДИЗАЙН (тот самый "хороший") === */
+    :root{--bg:#070507;--card:#0f0e10;--muted:#9b98a3;--accent:linear-gradient(90deg,#8b5cf6,#06b6d4);--radius:14px;--shadow:0 6px 30px rgba(2,2,6,.6);font-family:Inter,system-ui; color-scheme:dark;}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;background:var(--bg);color:#fff;display:flex;justify-content:center;padding:28px}
+    .container{max-width:1100px;width:100%}
+    .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+    .brand{display:flex;gap:14px;align-items:center}
+    .logo{width:56px;height:56px;border-radius:12px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800}
+    .user{display:flex;gap:12px;align-items:center}
+    .avatar{width:44px;height:44px;border-radius:10px;background:#141217;border:1px solid rgba(255,255,255,.05);cursor:pointer;padding:0;overflow:hidden}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));border-radius:var(--radius);padding:30px;box-shadow:var(--shadow);display:grid;grid-template-columns:1fr 360px;gap:20px}
+    .actions{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap}
+    .btn{border:0;padding:12px 18px;border-radius:12px;font-weight:600;cursor:pointer;display:inline-flex;gap:8px;align-items:center;background:var(--accent);color:#fff;box-shadow:0 8px 24px rgba(139,92,246,.25)}
+    .btn.secondary{background:#151319;box-shadow:none;border:1px solid rgba(255,255,255,.08)}
+    .btn.sberpay{background:linear-gradient(90deg,#16a34a,#22c55e)}
+    .panel{background:var(--card);border-radius:12px;padding:16px}
+    .pill{background:rgba(255,255,255,.05);padding:8px 12px;border-radius:999px;font-weight:600}
+    .modal-backdrop{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.7);z-index:50}
+    .modal{background:#0f0f12;border-radius:14px;padding:20px;width:100%;max-width:760px}
+    .field{display:flex;flex-direction:column;margin-bottom:12px}
+    .field input,.field textarea,.field select{background:#141217;border:1px solid rgba(255,255,255,.08);color:#fff;padding:10px;border-radius:8px}
+    .muted{color:var(--muted);font-size:13px}
+    .ticket-row{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:8px;background:rgba(255,255,255,0.01);margin-bottom:8px}
+    .ticket-actions button{margin-left:8px}
+    .small{font-size:13px;color:var(--muted)}
+    /* toast */
+    .toast-wrap{position:fixed;top:18px;right:18px;z-index:1000;display:flex;flex-direction:column;gap:8px}
+    .toast{background:#111216;padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.04);box-shadow:0 8px 30px rgba(0,0,0,.6);color:#fff;min-width:180px}
+    .toast.success{border-left:4px solid #22c55e}
+    /* confetti */
+    .confetti{position:fixed;left:0;right:0;top:0;bottom:0;pointer-events:none;z-index:999}
+    .confetti span{position:absolute;font-size:20px;animation:confetti 1200ms linear forwards}
+    @keyframes confetti{from{transform:translateY(0) rotate(0) scale(1);opacity:1}to{transform:translateY(260px) rotate(520deg) scale(.8);opacity:0}}
+  </style>
 </head>
 <body>
-
-<header>
-  <div><b>SD Premium</b> — Поддержка</div>
-  <div>
-    <span id="staffName"></span>
-    <button id="logoutBtn">Выйти</button>
+<div class="container">
+  <div class="topbar">
+    <div class="brand"><div class="logo">SD</div><div><b>SD Premium</b><div style="font-size:12px;color:var(--muted)">Личный кабинет</div></div></div>
+    <div class="user">
+      <div><b id="topName">Гость</b><div style="font-size:12px;color:var(--muted)" id="accountStatus">Не авторизован</div></div>
+      <button id="avatarBtn" class="avatar" title="Войти"><img id="avatarImg" style="width:44px;height:44px;object-fit:cover" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" /></button>
+      <button id="logoutBtn" class="btn secondary" style="display:none;margin-left:8px">Выйти</button>
+    </div>
   </div>
-</header>
 
-<main>
-  <aside id="ticketsList"><div class="empty">Загрузка...</div></aside>
-  <section>
-    <h2 id="detailTitle">Выберите заявку</h2>
-    <div id="detailMeta" class="small"></div>
-    <p id="detailDesc"></p>
-
-    <h3>Комментарии</h3>
-    <div id="detailComments"></div>
-
-    <textarea id="replyText" placeholder="Ответить..." style="width:100%;min-height:80px"></textarea><br><br>
-    <button id="replyBtn">Отправить ответ</button>
-  </section>
-</main>
-
-<!-- LOGIN -->
-<div class="modal" id="loginModal">
-  <div>
-    <h3>Вход сотрудника</h3>
-    <input id="loginEmail" placeholder="Email" style="width:100%"><br><br>
-    <input id="loginPassword" type="password" placeholder="Пароль" style="width:100%"><br><br>
-    <button id="loginBtn">Войти</button>
-    <div class="small" style="margin-top:10px">Если вы — не сотрудник, доступ будет запрещён.</div>
-  </div>
+  <main class="card">
+    <section>
+      <h2>Привет, <span id="greetName">Гость</span></h2>
+      <p class="muted">Добро пожаловать в SD Premium — поможем быстро и просто.</p>
+      <div class="actions">
+        <button id="openRequest" class="btn">Создать заявку</button>
+        <button id="openMyTickets" class="btn">Мои заявки</button>
+        <button id="openInstr" class="btn secondary">Инструкция</button>
+      </div>
+    </section>
+    <aside class="panel">
+      <h3>Статус аккаунта</h3>
+      <div style="display:flex;gap:10px;align-items:center"><div class="pill" id="accountPlan">—</div><div class="pill">Активно: до <span id="expiryDate">—</span></div></div>
+      <button id="payBtn" class="btn" style="margin-top:12px">Оплатить</button>
+      <div id="instrPanel" style="display:none;margin-top:12px">
+        <strong>Инструкция</strong>
+        <ol style="padding-left:18px;margin:8px 0 0 0;line-height:1.6;" class="muted">
+          <li>Вход — через вашу почту и пароль.</li>
+          <li>Создание заявки — укажите тему и описание, мы ответим в течение часа.</li>
+          <li>Для приоритетных вопросов отметьте "Высокий" или "Критический".</li>
+        </ol>
+      </div>
+    </aside>
+  </main>
 </div>
 
+<!-- Request Modal -->
+<div class="modal-backdrop" id="requestModal"><div class="modal">
+  <h3>Создать заявку</h3>
+  <form id="requestForm">
+    <div class="field"><label>Тема</label><input id="subject" required></div>
+    <div class="field"><label>Приоритет</label><select id="priority"><option>Нормальный</option><option>Высокий</option><option>Критический</option></select></div>
+    <div class="field"><label>Описание</label><textarea id="desc" required></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn secondary" id="requestCancel">Отмена</button><button type="submit" class="btn">Отправить</button></div>
+  </form>
+</div></div>
+
+<!-- Tickets Modal -->
+<div class="modal-backdrop" id="ticketsModal"><div class="modal">
+  <h3>Мои заявки</h3>
+  <div style="margin-bottom:10px"><input id="ticketSearch" placeholder="Поиск по теме или ID" style="width:100%;padding:8px;border-radius:8px;background:#141217;border:1px solid rgba(255,255,255,.06);color:#fff"/></div>
+  <div id="ticketsContainer" style="max-height:360px;overflow:auto"></div>
+  <div style="text-align:right;margin-top:12px"><button class="btn secondary" id="closeTicketsBtn">Закрыть</button></div>
+</div></div>
+
+<!-- Ticket Detail Modal -->
+<div class="modal-backdrop" id="ticketModal"><div class="modal">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h3 id="ticketTitle">Заявка</h3><div class="small" id="ticketId">#0</div></div>
+  <div class="small" id="ticketMeta"></div>
+  <div style="margin-top:12px"><strong>Описание</strong><div id="ticketDesc" style="margin-top:6px;white-space:pre-wrap"></div></div>
+  <div style="margin-top:12px"><strong>Комментарии</strong><div id="ticketComments" style="margin-top:6px"></div></div>
+  <div style="margin-top:12px" class="field"><label>Добавить уточнение</label><textarea id="newComment"></textarea></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+    <button id="addCommentBtn" class="btn">Добавить уточнение</button>
+    <button id="cancelTicketBtn" class="btn secondary">Отменить заявку</button>
+    <button id="deleteTicketBtn" class="btn secondary">Удалить заявку</button>
+    <button id="closeTicketModal" class="btn secondary">Закрыть окно</button>
+  </div>
+</div></div>
+
+<!-- Profile Modal -->
+<div class="modal-backdrop" id="profileModal"><div class="modal">
+  <h3>Настройки профиля</h3>
+  <div class="field"><label>Имя</label><input id="profileName" /></div>
+  <div class="field"><label>Аватар</label><input type="file" id="profileAvatar" accept="image/*" /></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <button class="btn secondary" id="closeProfileBtn">Закрыть</button>
+    <button class="btn" id="saveProfileBtn">Сохранить</button>
+  </div>
+</div></div>
+
+<!-- Login Modal -->
+<div class="modal-backdrop" id="loginModal"><div class="modal" style="max-width:420px">
+  <h3>Вход</h3>
+  <div class="field"><label>Email</label><input id="loginEmail" type="email" autocomplete="username"></div>
+  <div class="field"><label>Пароль</label><input id="loginPassword" type="password" autocomplete="current-password"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <button class="btn" id="loginBtn">Войти</button>
+    <button class="btn secondary" id="openRegisterBtn">Регистрация</button>
+  </div>
+</div></div>
+
+<!-- Register Modal -->
+<div class="modal-backdrop" id="registerModal"><div class="modal" style="max-width:420px">
+  <h3>Регистрация</h3>
+  <div class="field"><label>Имя (обязательно)</label><input id="registerName" required></div>
+  <div class="field"><label>Email</label><input id="registerEmail" type="email"></div>
+  <div class="field"><label>Пароль</label><input id="registerPassword" type="password"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <button class="btn" id="registerBtn">Создать аккаунт</button>
+    <button class="btn secondary" id="openLoginBtn">У меня есть аккаунт</button>
+  </div>
+</div></div>
+
+<!-- Toast + confetti -->
+<div class="toast-wrap" id="toastWrap"></div>
+<div class="confetti" id="confetti"></div>
+
 <script>
-/* ====== CONFIG ====== */
+/* ====== FIREBASE CONFIG - вставь свой при надобности ====== */
 const firebaseConfig = {
   apiKey: "AIzaSyAoTaDDCB-TUZzSlRuUKvnQ8QcJPQdERFE",
   authDomain: "sd-premium-b3b78.firebaseapp.com",
-  projectId: "sd-premium-b3b78"
+  projectId: "sd-premium-b3b78",
+  storageBucket: "sd-premium-b3b78.firebasestorage.app",
+  messagingSenderId: "475471999638",
+  appId: "1:475471999638:web:360d369103612e96f6c8b7"
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
 /* ====== UI refs ====== */
-const ticketsList = document.getElementById('ticketsList');
-const detailTitle = document.getElementById('detailTitle');
-const detailMeta = document.getElementById('detailMeta');
-const detailDesc = document.getElementById('detailDesc');
-const detailComments = document.getElementById('detailComments');
-const replyText = document.getElementById('replyText');
-const replyBtn = document.getElementById('replyBtn');
-const staffName = document.getElementById('staffName');
+const requestModal = document.getElementById('requestModal');
+const ticketsModal = document.getElementById('ticketsModal');
+const ticketModal = document.getElementById('ticketModal');
+const profileModal = document.getElementById('profileModal');
+const loginModal = document.getElementById('loginModal');
+const registerModal = document.getElementById('registerModal');
+
+const avatarBtn = document.getElementById('avatarBtn');
+const avatarImg = document.getElementById('avatarImg');
+const topName = document.getElementById('topName');
+const greetName = document.getElementById('greetName');
+const accountStatus = document.getElementById('accountStatus');
 const logoutBtn = document.getElementById('logoutBtn');
 
-const loginModal = document.getElementById('loginModal');
+const openRequest = document.getElementById('openRequest');
+const openMyTickets = document.getElementById('openMyTickets');
+const openInstr = document.getElementById('openInstr');
+const instrPanel = document.getElementById('instrPanel');
+const payBtn = document.getElementById('payBtn');
+
+const requestForm = document.getElementById('requestForm');
+const requestCancel = document.getElementById('requestCancel');
+
+const ticketsContainer = document.getElementById('ticketsContainer');
+const ticketTitle = document.getElementById('ticketTitle');
+const ticketIdEl = document.getElementById('ticketId');
+const ticketMeta = document.getElementById('ticketMeta');
+const ticketDesc = document.getElementById('ticketDesc');
+const ticketComments = document.getElementById('ticketComments');
+const newComment = document.getElementById('newComment');
+
+const addCommentBtn = document.getElementById('addCommentBtn');
+const cancelTicketBtn = document.getElementById('cancelTicketBtn');
+const deleteTicketBtn = document.getElementById('deleteTicketBtn');
+const closeTicketModal = document.getElementById('closeTicketModal');
+
+const ticketSearch = document.getElementById('ticketSearch');
+const closeTicketsBtn = document.getElementById('closeTicketsBtn');
+
+const profileName = document.getElementById('profileName');
+const profileAvatar = document.getElementById('profileAvatar');
+const closeProfileBtn = document.getElementById('closeProfileBtn');
+const saveProfileBtn = document.getElementById('saveProfileBtn');
+
 const loginEmail = document.getElementById('loginEmail');
 const loginPassword = document.getElementById('loginPassword');
 const loginBtn = document.getElementById('loginBtn');
+const openRegisterBtn = document.getElementById('openRegisterBtn');
 
-let currentUser = null;
-let currentTicketDocRef = null; // DocumentReference for selected ticket
+const registerName = document.getElementById('registerName');
+const registerEmail = document.getElementById('registerEmail');
+const registerPassword = document.getElementById('registerPassword');
+const registerBtn = document.getElementById('registerBtn');
+const openLoginBtn = document.getElementById('openLoginBtn');
 
-/* ====== helpers ====== */
+const expiryDateEl = document.getElementById('expiryDate');
+const accountPlanEl = document.getElementById('accountPlan');
+
+const toastWrap = document.getElementById('toastWrap');
+const confettiWrap = document.getElementById('confetti');
+
+/* ====== small helpers ====== */
+function showModal(modal){ modal.style.display='flex'; document.querySelector('.container').classList?.add?.('blurred'); }
+function hideModal(modal){ modal.style.display='none'; const visible = [...document.querySelectorAll('.modal-backdrop')].some(m=>m.style.display==='flex'); if(!visible) document.querySelector('.container').classList?.remove?.('blurred'); }
+function showToast(text,type='info',timeout=3000){ const el=document.createElement('div'); el.className='toast '+(type==='success'?'success':''); el.textContent=text; toastWrap.appendChild(el); setTimeout(()=>{el.style.opacity='0'; setTimeout(()=>el.remove(),400)}, timeout); }
+function createConfetti(){ const colors=['🎉','✨','⭐','🎊','💫']; for(let i=0;i<18;i++){ const s=document.createElement('span'); s.textContent=colors[Math.floor(Math.random()*colors.length)]; s.style.left=Math.random()*100+'%'; s.style.top=(-10-Math.random()*20)+'px'; s.style.fontSize=(12+Math.random()*18)+'px'; confettiWrap.appendChild(s); setTimeout(()=>s.remove(),1500); } }
+
+/* ====== date formatting robust ====== */
+function formatDMY(d){
+  return String(d.getDate()).padStart(2,'0') + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + d.getFullYear();
+}
+function formatExpiry(exp){
+  if(!exp) return '—';
+  // Firestore Timestamp
+  if(exp && typeof exp.toDate === 'function') return formatDMY(exp.toDate());
+  if(typeof exp === 'string'){
+    // already dd.mm.yyyy
+    if(/^\d{2}\.\d{2}\.\d{4}$/.test(exp)) return exp;
+    // ISO-like
+    const d = new Date(exp);
+    if(!isNaN(d)) return formatDMY(d);
+    return exp;
+  }
+  if(exp instanceof Date) return formatDMY(exp);
+  return String(exp);
+}
 function formatDate(ts){
   if(!ts) return '';
-  if(ts.toDate) return ts.toDate().toLocaleString();
-  try { return new Date(ts).toLocaleString(); } catch(e) { return String(ts); }
+  if(ts && typeof ts.toDate === 'function') return ts.toDate().toLocaleString();
+  const d = new Date(ts);
+  if(!isNaN(d)) return d.toLocaleString();
+  return String(ts);
 }
-function showLogin(){ loginModal.style.display='flex'; }
-function hideLogin(){ loginModal.style.display='none'; }
 
-/* ====== auth ====== */
-loginBtn.onclick = async ()=>{
-  try{
-    await auth.signInWithEmailAndPassword(loginEmail.value.trim(), loginPassword.value);
-  }catch(e){
-    alert('Ошибка входа: '+e.message);
-    console.error(e);
-  }
-};
-logoutBtn.onclick = ()=>auth.signOut();
+/* ====== Auth & current state ====== */
+let currentUser = null;
+let currentTicketId = null;
 
-/* ====== on auth ====== */
 auth.onAuthStateChanged(async user=>{
-  if(!user){
-    currentUser = null;
-    staffName.textContent = '';
-    showLogin();
-    ticketsList.innerHTML = '<div class="empty">Войдите чтобы просматривать заявки</div>';
-    return;
-  }
-
-  try{
-    const udoc = await db.collection('users').doc(user.uid).get();
-    const udata = udoc.exists ? udoc.data() : {};
-    if(!udata.isStaff){
-      alert('Доступ запрещён: ваш аккаунт не помечен как сотрудник (users/{uid}.isStaff ≠ true).');
-      await auth.signOut();
-      return;
+  currentUser = user;
+  if(user){
+    logoutBtn.style.display = 'inline-flex';
+    // load profile doc
+    try{
+      const ud = await db.collection('users').doc(user.uid).get();
+      const data = ud.exists ? ud.data() : {};
+      topName.textContent = data.name || user.email || 'Пользователь';
+      greetName.textContent = data.name || user.email || 'Пользователь';
+      avatarImg.src = data.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
+      accountStatus.textContent = 'Авторизован';
+      accountPlanEl.textContent = data.plan || '—';
+      expiryDateEl.textContent = formatExpiry(data.expiry);
+    }catch(e){
+      console.error('read user doc', e);
     }
-    currentUser = user;
-    staffName.textContent = udata.name || user.email || 'Сотрудник';
-    hideLogin();
-    await loadTickets();
-  }catch(e){
-    console.error('auth.onAuthStateChanged error', e);
-    ticketsList.innerHTML = '<div class="error">Ошибка при проверке аккаунта. Смотрите консоль.</div>';
+    enableAppForUser();
+    renderTickets(); // load per-user tickets
+  } else {
+    // guest
+    logoutBtn.style.display = 'none';
+    topName.textContent = 'Гость';
+    greetName.textContent = 'Гость';
+    avatarImg.src = 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
+    accountStatus.textContent = 'Не авторизован';
+    accountPlanEl.textContent = '—';
+    expiryDateEl.textContent = '—';
+    disableAppForGuest();
+    // do not force login modal here (user asked earlier, but keep optional): show login on avatar click
+    // clear tickets view
+    ticketsContainer.innerHTML = '<div class="small">Войдите чтобы увидеть свои заявки</div>';
   }
 });
 
-/* ====== robust loadTickets ======
-Attempts:
-  1) collectionGroup('tickets') (subcollections under users/.../tickets)
-  2) root collection 'tickets'
-Handles permission-denied with friendly message.
-*/
-async function loadTickets(){
-  ticketsList.innerHTML = '<div class="empty">Загрузка заявок...</div>';
+/* login/register handling (separate modals) */
+avatarBtn.onclick = ()=>{ if(currentUser){ profileName.value = topName.textContent; showModal(profileModal); } else { showModal(loginModal); } };
+
+openRegisterBtn.onclick = ()=>{ hideModal(loginModal); showModal(registerModal); };
+openLoginBtn.onclick = ()=>{ hideModal(registerModal); showModal(loginModal); };
+
+loginBtn.onclick = async ()=>{
+  const email = loginEmail.value.trim(), pass = loginPassword.value;
+  if(!email || !pass) return alert('Введите email и пароль');
+  try{ await auth.signInWithEmailAndPassword(email,pass); hideModal(loginModal); }catch(e){ alert(e.message); console.error(e); }
+};
+
+registerBtn.onclick = async ()=>{
+  const name = registerName.value.trim();
+  const email = registerEmail.value.trim();
+  const pass = registerPassword.value;
+  if(!name) return alert('Введите имя (обязательно)');
+  if(!email || !pass) return alert('Введите email и пароль');
   try{
-    let docs = [];
+    const uc = await auth.createUserWithEmailAndPassword(email, pass);
+    await db.collection('users').doc(uc.user.uid).set({ name, avatar:null, expiry:null, payments:[] }, { merge:true });
+    hideModal(registerModal);
+    showToast('Аккаунт создан. Добро пожаловать!', 'success');
+  }catch(e){ alert(e.message); console.error(e); }
+};
 
-    // try collectionGroup first
-    try{
-      const snap = await db.collectionGroup('tickets').orderBy('createdAt','desc').get();
-      if(snap && snap.size) docs = snap.docs;
-      console.log('collectionGroup result size=', snap.size);
-    }catch(e){
-      console.warn('collectionGroup failed:', e);
-      // if permission denied, show helpful message and stop
-      if(e && e.code === 'permission-denied'){
-        ticketsList.innerHTML = '<div class="error">Доступ к collectionGroup("tickets") запрещён (permission-denied). Проверьте правила Firestore.</div>';
-        return;
-      }
-      // otherwise continue to try root collection
-    }
+logoutBtn.onclick = async ()=>{ try{ await auth.signOut(); showToast('Выход выполнен'); }catch(e){ alert('Ошибка выхода: '+e.message); } };
 
-    // fallback: root collection 'tickets'
-    if(!docs.length){
-      try{
-        const snap2 = await db.collection('tickets').orderBy('createdAt','desc').get();
-        if(snap2 && snap2.size) docs = snap2.docs;
-        console.log('root tickets result size=', snap2.size);
-      }catch(e2){
-        console.warn('root tickets read failed:', e2);
-        if(e2 && e2.code === 'permission-denied'){
-          ticketsList.innerHTML = '<div class="error">Доступ к корневой коллекции "tickets" запрещён (permission-denied). Проверьте правила Firestore.</div>';
-          return;
-        }
-      }
-    }
-
-    if(!docs.length){
-      ticketsList.innerHTML = '<div class="empty">Заявок нет.</div>';
-      return;
-    }
-
-    // render list
-    ticketsList.innerHTML = '';
-    docs.forEach(doc=>{
-      const data = doc.data();
-      const div = document.createElement('div');
-      div.className = 'ticket';
-      const subj = data.subject || 'Без темы';
-      const status = data.status || '—';
-      const created = formatDate(data.createdAt);
-      div.innerHTML = `<b>${escapeHtml(subj)}</b><div class="small">${escapeHtml(status)} · ${escapeHtml(created)}</div>`;
-      div.onclick = ()=> openTicket(doc);
-      ticketsList.appendChild(div);
-    });
-
-  }catch(e){
-    console.error('loadTickets error', e);
-    ticketsList.innerHTML = '<div class="error">Ошибка загрузки заявок. Смотрите консоль (Ctrl+Shift+J).</div>';
-  }
-}
-
-/* open ticket — accepts either QueryDocumentSnapshot from collectionGroup or from root */
-async function openTicket(doc){
-  try{
-    // doc may be QueryDocumentSnapshot; get latest snapshot from its ref
-    const ref = doc.ref || doc; // doc could already be a DocumentReference (if you pass ref directly)
-    const snap = await ref.get();
-    if(!snap.exists){
-      alert('Документ не найден');
-      return;
-    }
-    const t = snap.data();
-    currentTicketDocRef = ref;
-    detailTitle.textContent = t.subject || 'Без темы';
-    detailMeta.textContent = `${t.priority||''} · ${t.status||''} · ${formatDate(t.createdAt)}`;
-    detailDesc.textContent = t.desc || '';
-    renderComments(t.comments || []);
-  }catch(e){
-    console.error('openTicket error', e);
-    alert('Ошибка открытия заявки — смотрите консоль.');
-  }
-}
-
-function renderComments(arr){
-  detailComments.innerHTML = '';
-  if(!Array.isArray(arr) || !arr.length){
-    detailComments.innerHTML = '<div class="empty">Комментариев нет</div>';
-    return;
-  }
-  arr.forEach(c=>{
-    const isStaff = c.role === 'staff';
-    const div = document.createElement('div');
-    div.className = 'comment' + (isStaff ? ' staff' : '');
-    const by = escapeHtml(c.byName || 'Пользователь');
-    const time = formatDate(c.at);
-    const text = escapeHtml(c.text || '');
-    div.innerHTML = `<div style="display:flex;justify-content:space-between"><div>${by} ${isStaff?'<span class="staff-label">Сотрудник поддержки</span>':''}</div><div class="small">${time}</div></div><div style="margin-top:6px">${text}</div>`;
-    detailComments.appendChild(div);
-  });
-}
-
-/* reply */
-replyBtn.onclick = async ()=>{
-  if(!currentTicketDocRef) return alert('Выберите заявку слева');
-  const text = replyText.value.trim();
-  if(!text) return;
-  if(!currentUser) return alert('Войдите');
-
-  const u = await db.collection('users').doc(currentUser.uid).get();
-  const name = u.exists ? (u.data().name || currentUser.email) : currentUser.email;
-
-  const comment = {
-    text,
-    by: currentUser.uid,
-    byName: name,
-    role: 'staff',
-    at: new Date().toISOString()
-  };
-  try{
-    await currentTicketDocRef.update({
-      comments: firebase.firestore.FieldValue.arrayUnion(comment)
-    });
-    // refresh display: fetch doc again
-    const fresh = await currentTicketDocRef.get();
-    renderComments(fresh.data().comments || []);
-    replyText.value = '';
-  }catch(e){
-    console.error('reply error', e);
-    alert('Ошибка отправки ответа. Смотрите консоль.');
+/* profile save */
+closeProfileBtn.onclick = ()=> hideModal(profileModal);
+saveProfileBtn.onclick = async ()=>{
+  if(!currentUser) return alert('Войдите чтобы сохранить профиль');
+  const name = profileName.value.trim() || 'Пользователь';
+  if(profileAvatar.files[0]){
+    const reader = new FileReader();
+    reader.onload = async ()=> {
+      const avatarData = reader.result;
+      await db.collection('users').doc(currentUser.uid).set({ name, avatar: avatarData }, { merge:true });
+      topName.textContent = name; greetName.textContent = name; avatarImg.src = avatarData;
+      hideModal(profileModal);
+      showToast('Профиль сохранён','success');
+    };
+    reader.readAsDataURL(profileAvatar.files[0]);
+  } else {
+    await db.collection('users').doc(currentUser.uid).set({ name }, { merge:true });
+    topName.textContent = name; greetName.textContent = name;
+    hideModal(profileModal);
+    showToast('Профиль сохранён','success');
   }
 };
 
-/* small helper to escape html for safety in injected strings */
-function escapeHtml(s){
-  if(!s && s !== 0) return '';
-  return String(s).replace(/[&<>"']/g, ch=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[ch]);
+/* enable/disable UI */
+function enableAppForUser(){ avatarBtn.title = 'Открыть профиль'; }
+function disableAppForGuest(){ avatarBtn.title = 'Войти'; }
+
+/* ====== Tickets: strictly per-user (preferred subcollection), fallback filtered root ====== */
+function userTicketsRef(){
+  if(!currentUser) return null;
+  return db.collection('users').doc(currentUser.uid).collection('tickets');
+}
+async function getTickets(){
+  if(!currentUser) return [];
+  // 1) try user subcollection
+  try{
+    const snap = await userTicketsRef().orderBy('createdAt','desc').get();
+    if(snap && snap.size) return snap.docs.map(d=>({ id:d.id, ...d.data() }));
+  }catch(e){
+    console.warn('user subcollection read failed:', e);
+  }
+  // 2) fallback: root collection filtered by userId field
+  try{
+    const q = db.collection('tickets').where('userId','==', currentUser.uid).orderBy('createdAt','desc');
+    const s = await q.get();
+    if(s && s.size) return s.docs.map(d=>({ id:d.id, ...d.data() }));
+  }catch(e){
+    console.warn('root tickets where(userId) failed:', e);
+  }
+  // 3) fallback by email match
+  try{
+    const all = await db.collection('tickets').orderBy('createdAt','desc').get();
+    const arr = all.docs.map(d=>({ id:d.id, ...d.data() }));
+    const filtered = arr.filter(t=>{
+      if(!t) return false;
+      if(t.userId && t.userId===currentUser.uid) return true;
+      if(t.email && currentUser.email && t.email.toLowerCase()===currentUser.email.toLowerCase()) return true;
+      return false;
+    });
+    return filtered;
+  }catch(e){
+    console.error('tickets final fallback failed', e);
+    return [];
+  }
 }
 
+/* add/update/delete */
+async function addTicketToDB(t){
+  if(!currentUser){ showModal(loginModal); return; }
+  // write to subcollection if possible, otherwise root with userId
+  try{
+    await userTicketsRef().add(t);
+    return;
+  }catch(e){
+    // fallback
+    t.userId = currentUser.uid;
+    t.email = currentUser.email;
+    await db.collection('tickets').add(t);
+  }
+}
+async function updateTicketInDB(updated){
+  if(!currentUser) return;
+  const { id, ...data } = updated;
+  // try subcollection update
+  try{ await userTicketsRef().doc(id).update(data); return; }catch(e){ /* fallback */ }
+  try{ await db.collection('tickets').doc(id).update(data); }catch(e){ console.warn('update fallback failed', e); }
+}
+async function deleteTicketFromDB(id){
+  if(!currentUser) return;
+  try{ await userTicketsRef().doc(id).delete(); return; }catch(e){}
+  try{ await db.collection('tickets').doc(id).delete(); }catch(e){ console.warn('delete fallback failed', e); }
+}
+
+/* ====== Render tickets (per-user) ====== */
+openRequest.onclick = ()=> { if(!currentUser) showModal(loginModal); else { showModal(requestModal); document.getElementById('subject').focus(); } };
+requestCancel.onclick = ()=> hideModal(requestModal);
+
+openMyTickets.onclick = async ()=>{ if(!currentUser){ showModal(loginModal); return; } await renderTickets(); showModal(ticketsModal); };
+closeTicketsBtn.onclick = ()=> hideModal(ticketsModal);
+
+openInstr.onclick = ()=> instrPanel.style.display = (instrPanel.style.display === 'none' || !instrPanel.style.display) ? 'block' : 'none';
+
+async function renderTickets(filter){
+  ticketsContainer.innerHTML = '';
+  if(!currentUser){ ticketsContainer.innerHTML = '<div class="small">Войдите чтобы увидеть свои заявки</div>'; return; }
+  const arr = await getTickets();
+  const q = (filter||'').toLowerCase();
+  if(!arr.length){ ticketsContainer.innerHTML = '<div class="small">Заявок нет</div>'; return; }
+  arr.filter(t=> !q || (t.subject && t.subject.toLowerCase().includes(q)) || (t.id && t.id.toLowerCase().includes(q)) ).forEach(t=>{
+    const row=document.createElement('div'); row.className='ticket-row';
+    const left=document.createElement('div');
+    const title=document.createElement('div');
+    title.innerHTML = `<strong>#${t.id}</strong> — ${t.subject} <div class="small">${t.priority || ''} · ${t.status || ''} · ${formatDate(t.createdAt)}</div>`;
+    left.appendChild(title);
+    const actions=document.createElement('div'); actions.className='ticket-actions';
+    const openBtn=document.createElement('button'); openBtn.className='btn'; openBtn.textContent='Открыть'; openBtn.onclick=(ev)=>{ev.stopPropagation(); openTicket(t.id);};
+    const delBtn=document.createElement('button'); delBtn.className='btn secondary'; delBtn.textContent='Удалить'; delBtn.onclick=(ev)=>{ ev.stopPropagation(); if(confirm('Удалить заявку?')){ deleteTicketFromDB(t.id).then(()=>renderTickets()); } };
+    actions.appendChild(openBtn); actions.appendChild(delBtn);
+    row.appendChild(left); row.appendChild(actions);
+    row.onclick = ()=> openTicket(t.id);
+    ticketsContainer.appendChild(row);
+  });
+}
+
+/* open and show single ticket (reads from subcollection first) */
+async function openTicket(id){
+  hideModal(ticketsModal);
+  // try subcollection doc
+  let docSnap = null;
+  try{
+    docSnap = await userTicketsRef().doc(id).get();
+    if(!docSnap.exists){
+      // try root
+      docSnap = await db.collection('tickets').doc(id).get();
+    }
+  }catch(e){
+    try{ docSnap = await db.collection('tickets').doc(id).get(); }catch(e2){ console.error(e2); }
+  }
+  if(!docSnap || !docSnap.exists) { alert('Заявка не найдена'); return; }
+  const t = docSnap.data();
+  currentTicketId = id;
+  ticketTitle.textContent = t.subject || '';
+  ticketIdEl.textContent = '#'+id;
+  ticketMeta.textContent = `${t.priority || ''} · ${t.status || ''} · ${formatDate(t.createdAt)}`;
+  ticketDesc.textContent = t.desc || '';
+  renderComments(t.comments || []);
+  newComment.value='';
+  showModal(ticketModal);
+}
+
+function renderComments(comments){
+  ticketComments.innerHTML = '';
+  if(!Array.isArray(comments) || !comments.length){ ticketComments.innerHTML = '<div class="small">Комментариев нет</div>'; return; }
+  comments.forEach(c=>{
+    const d=document.createElement('div');
+    d.style.padding='8px'; d.style.borderRadius='8px'; d.style.background='rgba(255,255,255,0.02)'; d.style.marginBottom='8px';
+    const who = c.byName || c.by || 'Пользователь';
+    const roleLabel = c.role === 'staff' ? ' <span style="color:#10b981;font-weight:600">Сотрудник поддержки</span>' : '';
+    d.innerHTML = `<div class="small">${escapeHtml(who)}${roleLabel} · ${formatDate(c.at)}</div><div style="margin-top:6px">${escapeHtml(c.text)}</div>`;
+    ticketComments.appendChild(d);
+  });
+}
+
+/* add comment */
+addCommentBtn.onclick = async ()=>{
+  const text = newComment.value.trim(); if(!text) return;
+  const arr = await getTickets(); const idx = arr.findIndex(x=>x.id===currentTicketId); if(idx===-1) return;
+  if(!Array.isArray(arr[idx].comments)) arr[idx].comments = [];
+  const comment = { text, at: new Date().toISOString(), by: currentUser?currentUser.uid:null, byName: currentUser? (currentUser.displayName || currentUser.email) : 'Гость', role: 'user' };
+  arr[idx].comments.push(comment);
+  await updateTicketInDB(arr[idx]);
+  renderComments(arr[idx].comments);
+  newComment.value='';
+};
+
+/* cancel / delete */
+cancelTicketBtn.onclick = async ()=>{ if(!confirm('Отменить заявку?')) return; const arr = await getTickets(); const idx = arr.findIndex(x=>x.id===currentTicketId); if(idx===-1) return; arr[idx].status='Отменена'; await updateTicketInDB(arr[idx]); ticketMeta.textContent = `${arr[idx].priority} · ${arr[idx].status} · ${formatDate(arr[idx].createdAt)}`; renderTickets(); };
+deleteTicketBtn.onclick = async ()=>{ if(!confirm('Удалить заявку окончательно?')) return; await deleteTicketFromDB(currentTicketId); hideModal(ticketModal); renderTickets(); };
+closeTicketModal.onclick = ()=> hideModal(ticketModal);
+
+/* request submit -> write to per-user collection (preferred) */
+requestForm.addEventListener('submit', async e=>{
+  e.preventDefault();
+  if(!currentUser){ showModal(loginModal); return; }
+  const subject = document.getElementById('subject').value.trim();
+  const priority = document.getElementById('priority').value;
+  const desc = document.getElementById('desc').value.trim();
+  const ticket = { subject, priority, desc, createdAt: firebase.firestore.FieldValue.serverTimestamp(), status:'Новая', comments:[], userId: currentUser.uid, email: currentUser.email };
+  await addTicketToDB(ticket);
+  // mailto fallback (keeps old behavior)
+  const createdAt = new Date().toISOString();
+  const body=[`Subject: ${subject}`,`Priority: ${priority}`,'',`Description:`,desc,'',`Date: ${createdAt}`].join('\n');
+  window.location.href='mailto:sd@test.ru?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+  hideModal(requestModal);
+  requestForm.reset();
+  renderTickets();
+});
+
+/* ticket search */
+ticketSearch.addEventListener('input', ()=> renderTickets(ticketSearch.value) );
+
+/* small helpers */
+function escapeHtml(s){ if(!s && s!==0) return ''; return String(s).replace(/[&<>"']/g,ch=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[ch]); }
+
 /* initial */
-ticketsList.innerHTML = '<div class="empty">Ожидание входа...</div>';
+(function init(){
+  // restore expiry from local if present
+  const savedExpiry = localStorage.getItem('sd_expiry');
+  if(savedExpiry) expiryDateEl.textContent = savedExpiry;
+})();
 </script>
 </body>
 </html>

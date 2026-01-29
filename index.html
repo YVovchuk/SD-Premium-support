@@ -19,6 +19,8 @@
 --muted:#9b98a3;
 --accent:linear-gradient(90deg,#8b5cf6,#06b6d4);
 --ok:#22c55e;
+--warn:#facc15;
+--bad:#ef4444;
 --radius:14px;
 --shadow:0 6px 30px rgba(2,2,6,.6);
 font-family:Inter,system-ui;
@@ -33,14 +35,18 @@ body{margin:0;background:var(--bg);color:#fff;padding:28px}
 .user{display:flex;gap:10px;align-items:center}
 .btn{border:0;padding:10px 16px;border-radius:12px;font-weight:600;cursor:pointer;background:var(--accent);color:#fff}
 .btn.secondary{background:#151319;border:1px solid rgba(255,255,255,.08)}
+.small{font-size:13px;color:var(--muted)}
 
 .grid{display:grid;grid-template-columns:340px 1fr;gap:20px}
 .panel{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));border-radius:14px;padding:16px;box-shadow:var(--shadow)}
+
 .ticket{padding:10px;border-radius:10px;background:rgba(255,255,255,0.02);margin-bottom:8px;cursor:pointer}
-.ticket:hover{background:rgba(255,255,255,0.05)}
-.small{font-size:13px;color:var(--muted)}
+.ticket.new{outline:2px solid var(--warn)}
+.ticket.archived{opacity:.4}
 .staff{color:var(--ok);font-weight:600}
-textarea,input{background:#141217;border:1px solid rgba(255,255,255,.08);color:#fff;border-radius:8px;padding:10px;width:100%}
+
+textarea,input,select{background:#141217;border:1px solid rgba(255,255,255,.08);color:#fff;border-radius:8px;padding:10px;width:100%}
+.attach{display:block;color:#8b5cf6}
 </style>
 </head>
 <body>
@@ -66,7 +72,14 @@ textarea,input{background:#141217;border:1px solid rgba(255,255,255,.08);color:#
 
   <div class="grid">
     <div class="panel">
-      <input id="search" placeholder="Поиск заявок...">
+      <select id="statusFilter">
+        <option value="all">Все</option>
+        <option value="Новая">Новые</option>
+        <option value="В работе">В работе</option>
+        <option value="Закрыта">Закрытые</option>
+        <option value="Архив">Архив</option>
+      </select>
+      <input id="search" placeholder="Поиск заявок..." style="margin-top:8px">
       <div id="ticketsList" style="margin-top:12px"></div>
     </div>
 
@@ -77,13 +90,18 @@ textarea,input{background:#141217;border:1px solid rgba(255,255,255,.08);color:#
         <div class="small" id="tvMeta"></div>
         <p id="tvDesc"></p>
 
+        <div id="tvAttach"></div>
+
         <strong>Комментарии</strong>
         <div id="tvComments"></div>
 
         <textarea id="replyText" placeholder="Ответ поддержки..."></textarea>
-        <div style="margin-top:10px;display:flex;gap:8px">
+
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
           <button id="sendReply" class="btn">Ответить</button>
-          <button id="markDone" class="btn secondary">Решена</button>
+          <button onclick="setStatus('В работе')" class="btn secondary">В работу</button>
+          <button onclick="setStatus('Закрыта')" class="btn secondary">Закрыта</button>
+          <button onclick="setStatus('Архив')" class="btn secondary">Архив</button>
         </div>
       </div>
     </div>
@@ -114,20 +132,19 @@ const staffStatus=document.getElementById('staffStatus');
 const loginBtn=document.getElementById('loginBtn');
 const logoutBtn=document.getElementById('logoutBtn');
 const authModal=document.getElementById('authModal');
+const ticketsList=document.getElementById('ticketsList');
+const statusFilter=document.getElementById('statusFilter');
 
 loginBtn.onclick=()=>authModal.style.display='flex';
 logoutBtn.onclick=()=>auth.signOut();
-
-document.getElementById('doLogin').onclick=async()=>{
-await auth.signInWithEmailAndPassword(
-document.getElementById('email').value,
-document.getElementById('password').value
-);
+doLogin.onclick=async()=>{
+await auth.signInWithEmailAndPassword(email.value,password.value);
 authModal.style.display='none';
 };
 
 let currentUser=null;
-let selectedTicket=null;
+let ticketsCache=[];
+let selected=null;
 
 auth.onAuthStateChanged(async user=>{
 currentUser=user;
@@ -135,91 +152,112 @@ if(user){
 loginBtn.style.display='none';
 logoutBtn.style.display='inline-flex';
 const doc=await db.collection('users').doc(user.uid).get();
-if(!doc.exists||!doc.data().isStaff){
-alert("Нет доступа");
-return;
-}
-staffName.textContent=doc.data().name||user.email;
+if(!doc.data().isStaff){ alert("Нет доступа"); return; }
+staffName.textContent=doc.data().name;
 staffStatus.textContent="Сотрудник поддержки";
 loadTickets();
 }else{
-staffName.textContent="Гость";
-staffStatus.textContent="Не авторизован";
 loginBtn.style.display='inline-flex';
 logoutBtn.style.display='none';
 }
 });
 
 async function loadTickets(){
-const list=document.getElementById('ticketsList');
-list.innerHTML='';
+ticketsCache=[];
+ticketsList.innerHTML='';
 const users=await db.collection('users').get();
 for(const u of users.docs){
 const snap=await db.collection('users').doc(u.id).collection('tickets').get();
 snap.forEach(d=>{
 const t=d.data();
-const el=document.createElement('div');
-el.className='ticket';
-el.innerHTML=`<b>${t.subject||'Без темы'}</b>
-<div class="small">${t.status||''} · ${t.priority||''}</div>
-<div class="small">От: ${t.userName||u.data().name||u.id}</div>`;
-el.onclick=()=>openTicket(u.id,d.id,t);
-list.appendChild(el);
+t._uid=u.id;
+t._id=d.id;
+ticketsCache.push(t);
 });
 }
+renderTickets();
 }
 
-function openTicket(uid,id,data){
-selectedTicket={uid,id,data};
-document.getElementById('emptyView').style.display='none';
-document.getElementById('ticketView').style.display='block';
-tvTitle.textContent=data.subject;
-tvMeta.textContent=data.status+" · "+data.priority;
-tvDesc.textContent=data.desc;
-renderComments(data.comments||[]);
+function renderTickets(){
+ticketsList.innerHTML='';
+const q=search.value.toLowerCase();
+const f=statusFilter.value;
+
+ticketsCache
+.filter(t=>(f==='all'||t.status===f))
+.filter(t=>(!q||t.subject.toLowerCase().includes(q)))
+.sort((a,b)=>(new Date(b.updatedAt||0)-new Date(a.updatedAt||0)))
+.forEach(t=>{
+const div=document.createElement('div');
+div.className='ticket'+(t.hasNew?' new':'')+(t.status==='Архив'?' archived':'');
+div.innerHTML=`<b>${t.subject}</b>
+<div class="small">${t.status} · ${t.priority}</div>
+<div class="small">От: ${t.userName}</div>`;
+div.onclick=()=>openTicket(t);
+ticketsList.appendChild(div);
+});
+}
+
+function openTicket(t){
+selected=t;
+t.hasNew=false;
+ticketView.style.display='block';
+emptyView.style.display='none';
+tvTitle.textContent=t.subject;
+tvMeta.textContent=t.status+" · "+t.priority;
+tvDesc.textContent=t.desc;
+tvAttach.innerHTML='';
+if(t.attachments){
+t.attachments.forEach(a=>{
+const link=document.createElement('a');
+link.href=a.data;
+link.textContent="📎 "+a.name;
+link.className="attach";
+link.target="_blank";
+tvAttach.appendChild(link);
+});
+}
+renderComments(t.comments||[]);
+renderTickets();
 }
 
 function renderComments(arr){
 tvComments.innerHTML='';
 arr.forEach(c=>{
 const d=document.createElement('div');
-d.className='small';
-d.innerHTML=`<b>${c.byName||'Пользователь'}</b> ${c.role==='staff'?' <span class="staff">(Сотрудник поддержки)</span>':''}<br>${c.text}`;
+d.innerHTML=`<div class="small"><b>${c.byName}</b> ${c.role==='staff'?'<span class="staff">(Сотрудник поддержки)</span>':''}</div>
+<div>${c.text}</div>`;
 tvComments.appendChild(d);
 });
 }
 
 sendReply.onclick=async()=>{
-if(!selectedTicket)return;
-const text=replyText.value.trim();
-if(!text)return;
-const comment={
-text,
-at:new Date().toISOString(),
-role:'staff',
-byName:staffName.textContent
-};
-await db.collection('users')
-.doc(selectedTicket.uid)
-.collection('tickets')
-.doc(selectedTicket.id)
-.update({
-comments:firebase.firestore.FieldValue.arrayUnion(comment),
-status:"В работе"
+if(!selected)return;
+const comment={text:replyText.value,byName:staffName.textContent,role:'staff',at:new Date().toISOString()};
+selected.comments.push(comment);
+selected.status="В работе";
+selected.updatedAt=new Date().toISOString();
+await db.collection('users').doc(selected._uid).collection('tickets').doc(selected._id).update({
+comments:selected.comments,
+status:selected.status,
+updatedAt:selected.updatedAt
 });
 replyText.value='';
 loadTickets();
 };
 
-markDone.onclick=async()=>{
-if(!selectedTicket)return;
-await db.collection('users')
-.doc(selectedTicket.uid)
-.collection('tickets')
-.doc(selectedTicket.id)
-.update({status:"Решена"});
+function setStatus(s){
+if(!selected)return;
+selected.status=s;
+selected.updatedAt=new Date().toISOString();
+db.collection('users').doc(selected._uid).collection('tickets').doc(selected._id).update({
+status:s,
+updatedAt:selected.updatedAt
+});
 loadTickets();
-};
+}
+
+search.oninput=statusFilter.onchange=renderTickets;
 </script>
 </body>
 </html>

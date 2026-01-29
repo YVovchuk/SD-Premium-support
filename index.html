@@ -68,6 +68,13 @@ padding:2px 8px;
 font-size:12px;
 margin-left:6px
 }
+
+.active-chat{
+border:1px solid #8b5cf6;
+border-radius:10px;
+padding:12px;
+}
+  
 </style>
 </head>
 <body>
@@ -279,6 +286,7 @@ function openTicket(uid,id,t,uname){
 currentTicket={uid,id};
 lastOpenedTicketId=id;
 ticketView.style.display="block";
+ticketView.classList.add("active-chat");
 empty.style.display="none";
 
 tvTitle.textContent=t.subject;
@@ -340,6 +348,7 @@ if(!currentTicket) return;
 if(!confirm("Удалить заявку?"))return;
 await db.collection("users").doc(currentTicket.uid).collection("tickets").doc(currentTicket.id).delete();
 ticketView.style.display="none";
+ticketView.classList.remove("active-chat");
 empty.style.display="block";
 toast("Заявка удалена");
 };

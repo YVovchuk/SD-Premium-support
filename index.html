@@ -125,11 +125,12 @@ margin-bottom:10px;
 width:100%;
 margin-top:8px;
 }
-.user-box{
-display:flex;
-align-items:center;
-gap:10px;
-}
+<div class="user-box">
+  <button id="staffBtn" class="btn gray">Сотрудники</button>
+  <div class="avatar" id="avatar">?</div>
+  <div id="staffName" class="staff-box">Гость</div>
+  <button id="logoutBtn" class="btn gray" style="display:none">Выйти</button>
+</div>
 
 .avatar{
 width:36px;
@@ -423,6 +424,45 @@ ticketView.style.display="none";
 empty.style.display="block";
 toast("Заявка удалена");
 };
+            const staffBtn = document.getElementById("staffBtn");
+const staffModal = document.getElementById("staffModal");
+const staffList = document.getElementById("staffList");
+const closeStaff = document.getElementById("closeStaff");
+
+staffBtn.onclick = async () => {
+  staffModal.style.display = "flex";
+  staffList.innerHTML = "Загрузка...";
+
+  const snap = await db.collection("users").get();
+  staffList.innerHTML = "";
+
+  if (snap.empty) {
+    staffList.innerHTML = "<div class='small'>Нет сотрудников</div>";
+    return;
+  }
+
+  snap.forEach(d => {
+    const u = d.data();
+    const div = document.createElement("div");
+    div.className = "comment";
+    div.innerHTML = `
+      <b>${u.name || "Без имени"}</b>
+      <div class="small">${u.email || ""}</div>
+    `;
+    staffList.appendChild(div);
+  });
+};
+
+closeStaff.onclick = () => {
+  staffModal.style.display = "none";
+};
 </script>
+            <div class="modal-backdrop" id="staffModal">
+  <div class="panel" style="max-width:420px;width:100%">
+    <h3>Сотрудники</h3>
+    <div id="staffList"></div>
+    <button id="closeStaff" class="btn gray" style="margin-top:10px">Закрыть</button>
+  </div>
+</div>
 </body>
 </html>

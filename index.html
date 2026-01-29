@@ -1,153 +1,399 @@
 <!doctype html>
 <html lang="ru">
 <head>
-<meta charset="utf-8">
-<title>SD Premium — Поддержка</title>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<style>
-body{margin:0;font-family:Inter;background:#070507;color:#fff}
-.container{padding:20px;transition:.2s}
-.container.blurred{filter:blur(6px) brightness(.7)}
-.ticket{background:#111;padding:12px;border-radius:10px;margin-bottom:10px}
-.comment{background:#1a1a1a;padding:8px;border-radius:8px;margin:6px 0}
-.staff{color:#22c55e;font-weight:bold}
-.modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.7)}
-.box{background:#0f0f12;padding:20px;border-radius:12px;width:320px}
-input,textarea{width:100%;margin-bottom:10px;padding:8px;border-radius:6px;border:0}
-button{padding:8px 12px;border-radius:8px;border:0;cursor:pointer}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SD Premium — Панель поддержки</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Firebase compat -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root{
+      --bg:#070507;--card:#0f0e10;--muted:#9b98a3;
+      --accent:linear-gradient(90deg,#8b5cf6,#06b6d4);
+      --radius:14px;--shadow:0 6px 30px rgba(2,2,6,.6);
+      --staff-green:#10b981;
+      font-family:Inter,system-ui; color-scheme:dark;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;background:var(--bg);color:#fff;display:flex;justify-content:center;padding:28px}
+    .wrap{max-width:1200px;width:100%}
+    .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+    .brand{display:flex;gap:14px;align-items:center}
+    .logo{width:56px;height:56px;border-radius:12px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800}
+    .user{display:flex;gap:12px;align-items:center}
+    .avatar{width:44px;height:44px;border-radius:10px;background:#141217;border:1px solid rgba(255,255,255,.05);cursor:pointer;overflow:hidden}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+    .h{font-size:20px;margin:0 0 6px 0}
+    .muted{color:var(--muted);font-size:13px}
+    .btn{border:0;padding:8px 12px;border-radius:10px;font-weight:600;cursor:pointer;background:var(--accent);color:#fff}
+    .btn.secondary{background:#151319;border:1px solid rgba(255,255,255,.06)}
+    .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px}
+    .two-col{display:grid;grid-template-columns:360px 1fr;gap:16px}
+    /* tickets list */
+    .list{background:var(--card);border-radius:12px;padding:12px;max-height:72vh;overflow:auto}
+    .ticket{padding:12px;border-radius:10px;background:rgba(255,255,255,0.01);margin-bottom:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+    .ticket .meta{font-size:12px;color:var(--muted)}
+    /* ticket detail */
+    .detail{background:var(--card);border-radius:12px;padding:16px;min-height:300px}
+    .comment{padding:10px;border-radius:8px;background:rgba(255,255,255,0.02);margin-bottom:8px}
+    .comment.staff .who{color:var(--staff-green);font-weight:700}
+    .comment.user .who{color:var(--muted);font-weight:600}
+    .comment .when{font-size:12px;color:var(--muted)}
+    .reply-box{display:flex;gap:8px;margin-top:10px}
+    .reply-box textarea{flex:1;background:#141217;border:1px solid rgba(255,255,255,.06);color:#fff;padding:8px;border-radius:8px;min-height:70px}
+    /* modal */
+    .modal-backdrop{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);z-index:2000}
+    .modal{background:#0f0f12;border-radius:14px;padding:18px;width:100%;max-width:560px}
+    .form-row{display:flex;flex-direction:column;margin-bottom:10px}
+    .form-row input{background:#141217;border:1px solid rgba(255,255,255,.06);color:#fff;padding:10px;border-radius:8px}
+    .small{font-size:13px;color:var(--muted)}
+    /* responsive */
+    @media (max-width:900px){
+      .two-col{grid-template-columns:1fr}
+      .list{max-height:40vh}
+    }
+  </style>
 </head>
 <body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">SD</div>
+      <div>
+        <div style="font-weight:700">SD Premium — Support</div>
+        <div class="muted">Панель сотрудников</div>
+      </div>
+    </div>
 
-<div class="container" id="main">
-<h2>Заявки пользователей</h2>
-<div id="tickets"></div>
+    <div class="user">
+      <div style="text-align:right">
+        <div id="staffName" style="font-weight:700">Гость</div>
+        <div id="staffRole" class="muted">Не авторизован</div>
+      </div>
+      <button id="avatarBtn" class="avatar" title="Профиль"><img id="avatarImg" style="width:44px;height:44px;object-fit:cover" src="https://cdn-icons-png.flaticon.com/512/847/847969.png" /></button>
+      <button id="logoutBtn" class="btn secondary" style="margin-left:8px;display:none">Выйти</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="width:100%">
+      <div class="toolbar">
+        <button id="refreshBtn" class="btn secondary">Обновить</button>
+        <input id="searchInput" placeholder="Поиск по теме/пользователю" style="background:#141217;border:1px solid rgba(255,255,255,.06);padding:8px;border-radius:8px;color:#fff;flex:1" />
+        <button id="openAuthBtn" class="btn">Войти</button>
+      </div>
+
+      <div class="two-col" style="margin-top:8px">
+        <div class="list" id="ticketsList">
+          <!-- tickets -->
+        </div>
+
+        <div class="detail" id="ticketDetail">
+          <div id="noTicket" class="small">Выберите заявку слева, чтобы увидеть детали.</div>
+          <div id="detailWrap" style="display:none">
+            <h3 id="detailTitle" class="h"></h3>
+            <div class="muted small" id="detailMeta"></div>
+            <div style="margin-top:12px"><strong>Описание</strong><div id="detailDesc" style="margin-top:8px;white-space:pre-wrap"></div></div>
+
+            <div style="margin-top:12px"><strong>Комментарии</strong><div id="detailComments" style="margin-top:8px"></div></div>
+
+            <div class="reply-box">
+              <textarea id="replyText" placeholder="Ответить..."></textarea>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <button id="replyBtn" class="btn">Отправить</button>
+                <button id="assignBtn" class="btn secondary">Пометить как выполнено</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
 </div>
 
-<div class="modal" id="authModal">
-<div class="box">
-<h3 id="authTitle">Вход</h3>
-<input id="authName" placeholder="Имя">
-<input id="authEmail" placeholder="Email">
-<input id="authPass" type="password" placeholder="Пароль">
-<button id="loginBtn">Войти</button>
-<button id="regBtn">Регистрация</button>
-</div>
-</div>
+<!-- AUTH MODAL -->
+<div class="modal-backdrop" id="authModal"><div class="modal">
+  <h3 id="authTitle">Вход для сотрудников</h3>
+
+  <div class="form-row"><label class="small">Email</label><input id="authEmail" type="email" /></div>
+  <div class="form-row"><label class="small">Пароль</label><input id="authPass" type="password"/></div>
+  <div class="form-row"><label class="small">Если регистрация — секретный код (staff)</label><input id="authSecret" type="password" placeholder="CODE_FOR_STAFF (оставьте пустым для входа)"/></div>
+
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <button id="authClose" class="btn secondary">Закрыть</button>
+    <button id="authSignIn" class="btn">Войти / Зарегистрироваться</button>
+  </div>
+  <div style="margin-top:8px" class="small">Регистрация сотрудников требует секретный код.</div>
+</div></div>
 
 <script>
+/* =========== Настройка Firebase (подставь свои данные) =========== */
 const firebaseConfig = {
- apiKey: "AIzaSyAoTaDDCB-TUZzSlRuUKvnQ8QcJPQdERFE",
- authDomain: "sd-premium-b3b78.firebaseapp.com",
- projectId: "sd-premium-b3b78",
- storageBucket: "sd-premium-b3b78.firebasestorage.app",
- messagingSenderId: "475471999638",
- appId: "1:475471999638:web:360d369103612e96f6c8b7"
+  apiKey: "AIzaSyAoTaDDCB-TUZzSlRuUKvnQ8QcJPQdERFE",
+  authDomain: "sd-premium-b3b78.firebaseapp.com",
+  projectId: "sd-premium-b3b78",
+  storageBucket: "sd-premium-b3b78.firebasestorage.app",
+  messagingSenderId: "475471999638",
+  appId: "1:475471999638:web:360d369103612e96f6c8b7",
 };
 firebase.initializeApp(firebaseConfig);
-const auth=firebase.auth();
-const db=firebase.firestore();
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-const authModal=document.getElementById('authModal');
-const main=document.getElementById('main');
-const ticketsDiv=document.getElementById('tickets');
+/* =========== UI refs =========== */
+const authModal = document.getElementById('authModal');
+const authEmail = document.getElementById('authEmail');
+const authPass = document.getElementById('authPass');
+const authSecret = document.getElementById('authSecret');
+const authSignIn = document.getElementById('authSignIn');
+const authClose = document.getElementById('authClose');
 
-loginBtn.onclick=async()=>{
- const email=authEmail.value;
- const pass=authPass.value;
- await auth.signInWithEmailAndPassword(email,pass);
+const openAuthBtn = document.getElementById('openAuthBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+const avatarBtn = document.getElementById('avatarBtn');
+const avatarImg = document.getElementById('avatarImg');
+const staffName = document.getElementById('staffName');
+const staffRole = document.getElementById('staffRole');
+
+const ticketsList = document.getElementById('ticketsList');
+const refreshBtn = document.getElementById('refreshBtn');
+const searchInput = document.getElementById('searchInput');
+
+const noTicket = document.getElementById('noTicket');
+const detailWrap = document.getElementById('detailWrap');
+const detailTitle = document.getElementById('detailTitle');
+const detailMeta = document.getElementById('detailMeta');
+const detailDesc = document.getElementById('detailDesc');
+const detailComments = document.getElementById('detailComments');
+const replyText = document.getElementById('replyText');
+const replyBtn = document.getElementById('replyBtn');
+const assignBtn = document.getElementById('assignBtn');
+
+let currentUser = null;
+let currentTicketDoc = null;
+
+/* ===== helper UI ===== */
+function showModal(m){ m.style.display='flex'; document.body.style.overflow='hidden'; }
+function hideModal(m){ m.style.display='none'; document.body.style.overflow='auto'; }
+function showToast(text){ const el=document.createElement('div'); el.className='small'; el.textContent=text; el.style.background='#111'; el.style.padding='8px'; el.style.borderRadius='8px'; el.style.position='fixed'; el.style.right='18px'; el.style.top='18px'; document.body.appendChild(el); setTimeout(()=>el.remove(),2500); }
+
+function formatDate(ts){
+  if(!ts) return '';
+  if(typeof ts.toDate === 'function') return ts.toDate().toLocaleString();
+  try{ const d = new Date(ts); return isNaN(d)?String(ts):d.toLocaleString(); }catch(e){ return String(ts); }
 }
-regBtn.onclick=async()=>{
- const name=authName.value;
- const email=authEmail.value;
- const pass=authPass.value;
- const cred=await auth.createUserWithEmailAndPassword(email,pass);
- await db.collection('users').doc(cred.user.uid).set({
-   name:name,
-   isStaff:true
- });
-}
 
+/* ===== AUTH ===== */
+/* секрет для регистрации сотрудников — укажи тут свой (менять в проде) */
+const STAFF_SECRET = 'MAKE_ME_STAFF_SECRET'; // <- поменяй на свой код
+
+openAuthBtn.onclick = ()=> showModal(authModal);
+authClose.onclick = ()=> hideModal(authModal);
+
+/* Вход или регистрация сотрудника:
+   если заполнен authSecret и он совпадает с STAFF_SECRET — создаём account с isStaff true
+   иначе пытаемся войти.
+*/
+authSignIn.onclick = async ()=>{
+  const email = authEmail.value.trim();
+  const pass = authPass.value;
+  const secret = authSecret.value.trim();
+  if(!email || !pass) return alert('Введите email и пароль');
+  try{
+    if(secret && secret === STAFF_SECRET){
+      // регистрируем сотрудника
+      const cred = await auth.createUserWithEmailAndPassword(email, pass);
+      await db.collection('users').doc(cred.user.uid).set({
+        name: email.split('@')[0],
+        isStaff: true,
+        avatar: null,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge:true });
+      hideModal(authModal);
+    } else {
+      // просто войти
+      await auth.signInWithEmailAndPassword(email, pass);
+      hideModal(authModal);
+    }
+  }catch(err){
+    alert(err.message);
+    console.error(err);
+  }
+};
+
+logoutBtn.onclick = async ()=>{
+  try{ await auth.signOut(); showToast('Вы вышли'); } catch(e){ alert(e.message); }
+};
+
+/* quick avatar click opens auth when guest */
+avatarBtn.onclick = ()=> {
+  if(currentUser) {
+    // nothing fancy here, could open profile edit
+    showToast('Вы уже вошли');
+  } else {
+    showModal(authModal);
+  }
+};
+
+/* ===== AUTH STATE ===== */
 auth.onAuthStateChanged(async user=>{
- if(!user){
-   authModal.style.display='flex';
-   main.classList.add('blurred');
-   return;
- }
- const doc=await db.collection('users').doc(user.uid).get();
- if(!doc.exists||doc.data().isStaff!==true){
-   document.body.innerHTML="<h2>Доступ запрещён: ваш аккаунт не помечен как сотрудник</h2>";
-   return;
- }
- authModal.style.display='none';
- main.classList.remove('blurred');
- loadTickets();
+  currentUser = user;
+  if(user){
+    // try read user doc
+    try{
+      const udoc = await db.collection('users').doc(user.uid).get();
+      const data = udoc.exists ? udoc.data() : {};
+      staffName.textContent = (data.name || user.email || 'Сотрудник');
+      staffRole.textContent = data.isStaff ? 'Сотрудник поддержки' : 'Обычный пользователь';
+      avatarImg.src = data.avatar || 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
+      logoutBtn.style.display = 'inline-flex';
+      openAuthBtn.style.display = 'none';
+      // If not staff — show limited notice but still allow viewing
+      if(!data.isStaff){
+        // not staff — show friendly notice but still allow
+        showToast('Вы вошли, но не помечены как сотрудник. Ограниченный доступ.');
+      } else {
+        // staff — load tickets
+        await loadTickets();
+      }
+    }catch(e){
+      console.error('read user doc', e);
+    }
+  } else {
+    // guest state
+    staffName.textContent = 'Гость';
+    staffRole.textContent = 'Не авторизован';
+    avatarImg.src = 'https://cdn-icons-png.flaticon.com/512/847/847969.png';
+    logoutBtn.style.display = 'none';
+    openAuthBtn.style.display = 'inline-flex';
+    ticketsList.innerHTML = '<div class="small">Войдите чтобы просмотреть заявки</div>';
+  }
 });
 
+/* ===== TICKETS: collectionGroup to include users/{uid}/tickets and root tickets ===== */
 async function loadTickets(){
- ticketsDiv.innerHTML='';
- const map=new Map();
-
- const root=await db.collection('tickets').get();
- root.forEach(d=>map.set(d.ref.path,{id:d.id,...d.data(),ref:d.ref}));
-
- const group=await db.collectionGroup('tickets').get();
- group.forEach(d=>{
-   if(!map.has(d.ref.path)) map.set(d.ref.path,{id:d.id,...d.data(),ref:d.ref});
- });
-
- const arr=[...map.values()];
- arr.sort((a,b)=>{
-   const ta=a.createdAt?.toDate?.()||new Date(a.createdAt||0);
-   const tb=b.createdAt?.toDate?.()||new Date(b.createdAt||0);
-   return tb-ta;
- });
-
- arr.forEach(t=>{
-   const div=document.createElement('div');
-   div.className='ticket';
-   div.innerHTML=`
-<b>${t.subject}</b><br>
-${t.desc}<br>
-<div id="c${t.id}"></div>
-<textarea id="r${t.id}" placeholder="Ответ поддержки"></textarea>
-<button onclick="reply('${t.ref.path}','${t.id}')">Ответить</button>
-`;
-   ticketsDiv.appendChild(div);
-   renderComments(t.id,t.comments||[]);
- });
+  ticketsList.innerHTML = '<div class="small">Загрузка…</div>';
+  try{
+    // collectionGroup to fetch tickets in subcollections named "tickets"
+    const snap = await db.collectionGroup('tickets').orderBy('createdAt','desc').get();
+    const docs = snap.docs;
+    if(!docs.length){ ticketsList.innerHTML = '<div class="small">Заявок нет</div>'; return; }
+    renderTicketsList(docs);
+  }catch(e){
+    console.error('loadTickets error', e);
+    ticketsList.innerHTML = '<div class="small">Ошибка загрузки заявок</div>';
+  }
 }
 
-function renderComments(id,arr){
- const c=document.getElementById('c'+id);
- c.innerHTML='';
- arr.forEach(x=>{
-   const d=document.createElement('div');
-   d.className='comment';
-   d.innerHTML=`<span class="staff">${x.author} (Сотрудник поддержки)</span><br>${x.text}`;
-   c.appendChild(d);
- });
+function renderTicketsList(docs){
+  const q = (searchInput.value||'').toLowerCase();
+  ticketsList.innerHTML = '';
+  docs.forEach(d=>{
+    const data = d.data();
+    // build display string
+    const subject = data.subject || '(без темы)';
+    const owner = data.ownerName || data.email || (d.ref.path.split('/')[1] || 'unknown');
+    if(q && !(subject.toLowerCase().includes(q) || (owner && owner.toLowerCase().includes(q)))) return;
+    const el = document.createElement('div');
+    el.className = 'ticket';
+    el.innerHTML = `<div>
+      <div style="font-weight:700">${subject}</div>
+      <div class="meta">${owner} · ${data.priority||''} · ${formatDate(data.createdAt)}</div>
+    </div>
+    <div><button class="btn secondary btn-open">Открыть</button></div>`;
+    // open handler — keep doc ref
+    el.querySelector('.btn-open').onclick = (ev)=>{
+      ev.stopPropagation();
+      openTicketDoc(d);
+    };
+    el.onclick = ()=> openTicketDoc(d);
+    ticketsList.appendChild(el);
+  });
 }
 
-async function reply(path,id){
- const txt=document.getElementById('r'+id).value;
- if(!txt) return;
- const user=auth.currentUser;
- const u=await db.collection('users').doc(user.uid).get();
- const name=u.data().name||'Сотрудник';
- const ref=db.doc(path);
- await ref.update({
-   comments:firebase.firestore.FieldValue.arrayUnion({
-     text:txt,
-     at:new Date().toISOString(),
-     author:name,
-     staff:true
-   })
- });
- loadTickets();
+/* search / refresh */
+refreshBtn.onclick = ()=> loadTickets();
+searchInput.addEventListener('input', ()=> loadTickets());
+
+/* ===== open ticket and show details ===== */
+function clearDetail(){
+  detailTitle.textContent=''; detailMeta.textContent=''; detailDesc.textContent=''; detailComments.innerHTML=''; replyText.value=''; currentTicketDoc=null;
+  detailWrap.style.display='none'; noTicket.style.display='block';
 }
+async function openTicketDoc(docSnapshotOrSnapDoc){
+  let docSnap = docSnapshotOrSnapDoc;
+  // if passed QueryDocumentSnapshot it's already fine; if passed a path/string - not supported here
+  currentTicketDoc = docSnap;
+  const data = docSnap.data();
+  detailTitle.textContent = data.subject || '(без темы)';
+  detailMeta.textContent = `${data.priority||''} · ${data.status||''} · ${formatDate(data.createdAt)}`;
+  detailDesc.textContent = data.desc || '';
+  renderDetailComments(data.comments || []);
+  noTicket.style.display = 'none'; detailWrap.style.display='block';
+}
+
+function renderDetailComments(comments){
+  detailComments.innerHTML = '';
+  if(!comments || comments.length===0){ detailComments.innerHTML = '<div class="small">Комментариев нет</div>'; return; }
+  comments.forEach(c=>{
+    const who = c.byName || c.by || 'Пользователь';
+    const isStaff = c.role === 'staff' || c.byRole === 'staff';
+    const div = document.createElement('div');
+    div.className = 'comment ' + (isStaff ? 'staff' : 'user');
+    div.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="who">${who} ${isStaff?'<span style="color:var(--staff-green);font-weight:600;margin-left:8px">Сотрудник поддержки</span>':''}</div>
+        <div class="when">${formatDate(c.at)}</div>
+      </div>
+      <div style="margin-top:6px">${c.text}</div>`;
+    detailComments.appendChild(div);
+  });
+}
+
+/* reply -> add comment (mark as staff) */
+replyBtn.onclick = async ()=>{
+  if(!currentUser){ showToast('Сначала войдите'); return; }
+  if(!currentTicketDoc){ showToast('Выберите заявку'); return; }
+  const text = replyText.value.trim(); if(!text) return;
+  const staffNameVal = staffName.textContent || currentUser.email || 'Сотрудник';
+  const c = { text, by: currentUser.uid, byName: staffNameVal, role: 'staff', at: new Date().toISOString() };
+  try{
+    await currentTicketDoc.ref.update({ comments: firebase.firestore.FieldValue.arrayUnion(c) });
+    // reload detail comments (fetch doc again)
+    const fresh = await currentTicketDoc.ref.get();
+    currentTicketDoc = fresh;
+    renderDetailComments((fresh.data().comments||[]));
+    replyText.value = '';
+    showToast('Ответ добавлен');
+  }catch(e){
+    console.error('reply error', e); alert('Не удалось добавить комментарий: '+e.message);
+  }
+};
+
+/* assign / mark done */
+assignBtn.onclick = async ()=>{
+  if(!currentTicketDoc) return;
+  if(!confirm('Пометить заявку как выполненную?')) return;
+  try{
+    await currentTicketDoc.ref.update({ status: 'Выполнена' });
+    const fresh = await currentTicketDoc.ref.get();
+    currentTicketDoc = fresh;
+    detailMeta.textContent = `${fresh.data().priority || ''} · ${fresh.data().status || ''} · ${formatDate(fresh.data().createdAt)}`;
+    showToast('Заявка помечена как выполненная');
+    loadTickets();
+  }catch(e){ console.error(e); alert('Ошибка: '+e.message); }
+};
+
+/* initial clear */
+clearDetail();
 </script>
 </body>
 </html>

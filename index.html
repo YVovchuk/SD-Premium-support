@@ -24,10 +24,20 @@ body{margin:0;background:var(--bg);color:#fff;padding:24px}
 .wrap{max-width:1200px;margin:auto}
 .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
 .logo{width:52px;height:52px;border-radius:12px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800}
-.panel{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:16px}
-.grid{display:grid;grid-template-columns:320px 1fr;gap:16px}
 
-.ticket{padding:12px;border-radius:10px;background:rgba(255,255,255,.03);margin-bottom:8px;cursor:pointer}
+.staff-box{
+padding:6px 14px;
+border-radius:999px;
+background:rgba(255,255,255,.05);
+border:1px solid rgba(255,255,255,.12);
+font-weight:600;
+}
+
+.panel{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:16px}
+.grid{display:grid;grid-template-columns:340px 1fr;gap:16px}
+
+.ticket{padding:12px;border-radius:10px;background:rgba(255,255,255,.03);margin-bottom:8px;cursor:pointer;border:1px solid transparent}
+.ticket.active{border:1px solid #8b5cf6}
 .ticket.new{border-left:4px solid #22c55e}
 .ticket h4{margin:0 0 4px 0}
 
@@ -39,27 +49,29 @@ body{margin:0;background:var(--bg);color:#fff;padding:24px}
 
 input,textarea,select{background:#141217;border:1px solid rgba(255,255,255,.08);color:#fff;border-radius:8px;padding:8px;width:100%}
 
-.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50}
-.modal{background:#0f0f12;padding:18px;border-radius:14px;width:100%;max-width:400px}
-
 .comment{background:rgba(255,255,255,.04);padding:8px;border-radius:8px;margin-bottom:6px}
 .staff{color:#22c55e;font-weight:700}
 
 .attach a{color:#3b82f6;text-decoration:none}
 
-.status{padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.05)}
+.toast{
+position:fixed;top:20px;right:20px;
+background:#111216;padding:12px 16px;
+border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.6);
+z-index:999;color:#fff
+}
 </style>
 </head>
 <body>
 
-<div class="wrap" id="app">
+<div class="wrap">
 <div class="top">
 <div style="display:flex;gap:12px;align-items:center">
 <div class="logo">SD</div>
 <div><b>SD Premium</b><div class="small">Панель поддержки</div></div>
 </div>
-<div>
-<span id="staffName">Гость</span>
+<div style="display:flex;gap:10px;align-items:center">
+<div id="staffName" class="staff-box">Гость</div>
 <button id="loginBtn" class="btn gray">Войти</button>
 <button id="logoutBtn" class="btn gray" style="display:none">Выйти</button>
 </div>
@@ -67,12 +79,16 @@ input,textarea,select{background:#141217;border:1px solid rgba(255,255,255,.08);
 
 <div class="grid">
 <div class="panel">
+<div style="display:flex;gap:8px">
 <input id="search" placeholder="Поиск...">
+<button id="refreshBtn" class="btn gray">Обновить</button>
+</div>
 <div id="ticketsList" style="margin-top:12px"></div>
 </div>
 
 <div class="panel">
 <div id="empty"><div class="small">Выберите заявку</div></div>
+
 <div id="ticketView" style="display:none">
 
 <div style="display:flex;justify-content:space-between;align-items:center">
@@ -81,13 +97,14 @@ input,textarea,select{background:#141217;border:1px solid rgba(255,255,255,.08);
 <div class="small" id="tvUser"></div>
 <div class="small" id="tvMeta"></div>
 </div>
-<div>
+<div style="display:flex;gap:6px">
 <select id="statusSelect">
 <option>Новая</option>
 <option>В работе</option>
 <option>Решена</option>
 <option>Архив</option>
 </select>
+<button id="saveStatusBtn" class="btn blue">Сохранить</button>
 <button id="deleteBtn" class="btn red">Удалить</button>
 </div>
 </div>
@@ -115,7 +132,7 @@ input,textarea,select{background:#141217;border:1px solid rgba(255,255,255,.08);
 </div>
 
 <div class="modal-backdrop" id="authModal">
-<div class="modal">
+<div class="panel" style="max-width:400px">
 <h3>Вход</h3>
 <input id="email" placeholder="Email">
 <input id="pass" type="password" placeholder="Пароль">
@@ -147,6 +164,7 @@ const tvAttach=document.getElementById("tvAttach");
 const replyText=document.getElementById("replyText");
 const sendReply=document.getElementById("sendReply");
 const statusSelect=document.getElementById("statusSelect");
+const saveStatusBtn=document.getElementById("saveStatusBtn");
 const deleteBtn=document.getElementById("deleteBtn");
 
 const authModal=document.getElementById("authModal");
@@ -154,11 +172,22 @@ const loginBtn=document.getElementById("loginBtn");
 const logoutBtn=document.getElementById("logoutBtn");
 const staffName=document.getElementById("staffName");
 
+const refreshBtn=document.getElementById("refreshBtn");
+
 const email=document.getElementById("email");
 const pass=document.getElementById("pass");
 const doLogin=document.getElementById("doLogin");
 
 let currentTicket=null;
+let activeEl=null;
+
+function toast(t){
+const d=document.createElement("div");
+d.className="toast";
+d.textContent=t;
+document.body.appendChild(d);
+setTimeout(()=>d.remove(),3000);
+}
 
 loginBtn.onclick=()=>authModal.style.display="flex";
 doLogin.onclick=()=>auth.signInWithEmailAndPassword(email.value,pass.value);
@@ -168,6 +197,7 @@ auth.onAuthStateChanged(async u=>{
 if(u){
 loginBtn.style.display="none";
 logoutBtn.style.display="inline-block";
+authModal.style.display="none";
 const doc=await db.collection("users").doc(u.uid).get();
 staffName.textContent=doc.exists?doc.data().name:u.email;
 loadTickets();
@@ -178,7 +208,10 @@ ticketsList.innerHTML="<div class='small'>Войдите</div>";
 }
 });
 
+refreshBtn.onclick=()=>loadTickets();
+
 function loadTickets(){
+ticketsList.innerHTML="";
 db.collection("users").onSnapshot(async users=>{
 ticketsList.innerHTML="";
 for(const u of users.docs){
@@ -189,7 +222,12 @@ const t=d.data();
 const div=document.createElement("div");
 div.className="ticket "+(t.lastReplyRole==="user"?"new":"");
 div.innerHTML=`<h4>${t.subject}</h4><div class="small">${uname} · ${t.status||""}</div>`;
-div.onclick=()=>openTicket(u.id,d.id,t,uname);
+div.onclick=()=>{
+if(activeEl) activeEl.classList.remove("active");
+div.classList.add("active");
+activeEl=div;
+openTicket(u.id,d.id,t,uname);
+};
 ticketsList.appendChild(div);
 });
 }
@@ -212,15 +250,16 @@ tvComments.innerHTML="";
 (t.comments||[]).forEach(c=>{
 const div=document.createElement("div");
 div.className="comment";
-div.innerHTML=`<div class="small">${c.byName||"Пользователь"} ${c.role==="staff"?"<span class='staff'>(поддержка)</span>":""}</div><div>${c.text}</div>`;
+div.innerHTML=`<div class="small">${c.byName||"Пользователь"} ${c.role==="staff"?"<span class='staff'>(поддержка)</span>":""} · ${new Date(c.at).toLocaleString()}</div><div>${c.text}</div>`;
 tvComments.appendChild(div);
 });
 
 tvAttach.innerHTML="";
 (t.attachments||[]).forEach(a=>{
+const url = a.url || a.data;
 const d=document.createElement("div");
 d.className="attach";
-d.innerHTML=`📎 <a href="${a.url}" target="_blank">${a.name}</a>`;
+d.innerHTML=`📎 <a href="${url}" target="_blank">${a.name}</a>`;
 tvAttach.appendChild(d);
 });
 }
@@ -240,13 +279,15 @@ lastReplyRole:"staff",
 status:"В работе"
 });
 replyText.value="";
+toast("Ответ отправлен");
 };
 
-statusSelect.onchange=async()=>{
+saveStatusBtn.onclick=async()=>{
 if(!currentTicket) return;
 await db.collection("users").doc(currentTicket.uid).collection("tickets").doc(currentTicket.id).update({
 status:statusSelect.value
 });
+toast("Статус сохранён");
 };
 
 deleteBtn.onclick=async()=>{
@@ -255,6 +296,7 @@ if(!confirm("Удалить заявку?"))return;
 await db.collection("users").doc(currentTicket.uid).collection("tickets").doc(currentTicket.id).delete();
 ticketView.style.display="none";
 empty.style.display="block";
+toast("Заявка удалена");
 };
 </script>
 </body>

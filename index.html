@@ -2,8 +2,8 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SD Premium — Поддержка</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,286 +14,189 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
 <style>
-:root{
---bg:#070507;
---card:#0f0e10;
---muted:#9b98a3;
---accent:linear-gradient(90deg,#8b5cf6,#06b6d4);
---ok:#22c55e;
---radius:14px;
---shadow:0 6px 30px rgba(2,2,6,.6);
-font-family:Inter;
-color-scheme:dark;
-}
-*{box-sizing:border-box}
-body{margin:0;min-height:100vh;background:var(--bg);color:#fff;display:flex;justify-content:center;padding:28px}
+:root{--bg:#070507;--card:#0f0e10;--muted:#9b98a3;--accent:linear-gradient(90deg,#8b5cf6,#06b6d4);--ok:#22c55e;--bad:#ef4444;font-family:Inter}
+body{margin:0;background:var(--bg);color:#fff;display:flex;justify-content:center;padding:24px}
 .wrap{max-width:1200px;width:100%}
-.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
-.brand{display:flex;gap:14px;align-items:center}
-.logo{width:56px;height:56px;border-radius:12px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.brand{display:flex;gap:12px;align-items:center}
+.logo{width:52px;height:52px;border-radius:12px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800}
 .user{display:flex;gap:12px;align-items:center}
-.avatar{width:42px;height:42px;border-radius:10px;background:#141217;border:1px solid rgba(255,255,255,.05);overflow:hidden}
-.card{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
-.grid{display:grid;grid-template-columns:360px 1fr;gap:18px}
-.btn{border:0;padding:10px 16px;border-radius:12px;font-weight:600;cursor:pointer;background:var(--accent);color:#fff}
+.btn{background:var(--accent);border:0;padding:10px 14px;border-radius:10px;color:#fff;font-weight:600;cursor:pointer}
 .btn.secondary{background:#151319;border:1px solid rgba(255,255,255,.08)}
-.small{font-size:13px;color:var(--muted)}
-.ticket{padding:12px;border-radius:12px;background:rgba(255,255,255,.03);margin-bottom:8px;cursor:pointer}
-.ticket.active{outline:2px solid #8b5cf6}
-.filters{display:flex;gap:8px;margin-bottom:10px}
-select,input,textarea{
-background:#141217;border:1px solid rgba(255,255,255,.08);
-color:#fff;padding:8px;border-radius:8px;width:100%
-}
-.comment{background:rgba(255,255,255,.04);padding:10px;border-radius:10px;margin-bottom:8px}
-.staff{color:var(--ok);font-weight:700}
-.file-link{display:inline-block;margin-top:6px;color:#8b5cf6}
+.panel{background:var(--card);border-radius:14px;padding:16px}
+.grid{display:grid;grid-template-columns:320px 1fr;gap:16px}
+.ticket{padding:10px;border-radius:10px;background:rgba(255,255,255,.03);margin-bottom:8px;cursor:pointer}
+.ticket.new{border-left:4px solid var(--ok)}
+.small{color:var(--muted);font-size:13px}
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6)}
+.modal .box{background:#0f0f12;padding:20px;border-radius:14px;width:100%;max-width:420px}
+textarea,input{background:#141217;border:1px solid rgba(255,255,255,.1);color:#fff;padding:10px;border-radius:8px;width:100%}
+.comment{background:rgba(255,255,255,.03);padding:8px;border-radius:8px;margin-bottom:8px}
+.staff{color:#22c55e;font-weight:600}
+.attach{display:block;margin-top:6px;color:#60a5fa}
 </style>
 </head>
 <body>
 
 <div class="wrap">
-
-<div class="topbar">
-<div class="brand">
-<div class="logo">SD</div>
-<div>
-<b>SD Premium</b>
-<div class="small">Панель поддержки</div>
-</div>
-</div>
-<div class="user">
-<div id="staffName">Гость</div>
-<button id="loginBtn" class="btn secondary">Войти</button>
-<button id="logoutBtn" class="btn secondary" style="display:none">Выйти</button>
-</div>
+<div class="top">
+  <div class="brand"><div class="logo">SD</div><div><b>SD Premium</b><div class="small">Панель поддержки</div></div></div>
+  <div class="user">
+    <div><b id="staffName">Гость</b><div class="small" id="staffStatus">Не авторизован</div></div>
+    <button id="loginBtn" class="btn secondary">Войти</button>
+    <button id="logoutBtn" class="btn secondary" style="display:none">Выйти</button>
+  </div>
 </div>
 
 <div class="grid">
-<div class="card">
-<div class="filters">
-<select id="statusFilter">
-<option value="all">Все</option>
-<option value="Новая">Новая</option>
-<option value="В работе">В работе</option>
-<option value="Решена">Решена</option>
-<option value="Архив">Архив</option>
-</select>
-<input id="search" placeholder="Поиск по теме или имени">
-</div>
-<div id="tickets"></div>
+<div class="panel">
+  <input id="search" placeholder="Поиск..." />
+  <div id="ticketsList" style="margin-top:10px"></div>
 </div>
 
-<div class="card">
-<div id="emptyView" class="small">Выберите заявку слева</div>
-<div id="ticketView" style="display:none">
-<h3 id="tSubject"></h3>
-<div class="small" id="tMeta"></div>
+<div class="panel">
+  <div id="empty">Выберите заявку</div>
 
-<div style="margin-top:12px">
-<strong>Описание</strong>
-<div id="tDesc" style="margin-top:6px"></div>
-<div id="tFile"></div>
-</div>
+  <div id="view" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <h3 id="vTitle"></h3>
+        <div class="small" id="vMeta"></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="setStatus('В работе')" class="btn secondary">В работу</button>
+        <button onclick="setStatus('Закрыта')" class="btn secondary">Закрыта</button>
+        <button onclick="setStatus('Решена')" class="btn">Решена</button>
+        <button onclick="setStatus('Архив')" class="btn secondary">Архив</button>
+        <button onclick="deleteTicket()" class="btn secondary">Удалить</button>
+      </div>
+    </div>
 
-<div style="margin-top:14px">
-<strong>Комментарии</strong>
-<div id="comments"></div>
-</div>
+    <div style="margin-top:12px"><b>Описание</b><div id="vDesc"></div></div>
+    <div style="margin-top:12px"><b>Комментарии</b><div id="vComments"></div></div>
 
-<div style="margin-top:12px">
-<textarea id="replyText" placeholder="Ответ поддержки..."></textarea>
-<input type="file" id="replyFile">
-</div>
-
-<div style="display:flex;gap:8px;margin-top:10px">
-<select id="statusSelect">
-<option>Новая</option>
-<option>В работе</option>
-<option>Решена</option>
-<option>Архив</option>
-</select>
-<button id="sendReply" class="btn">Ответить</button>
-<button id="deleteBtn" class="btn secondary">Удалить</button>
-</div>
+    <textarea id="replyText" placeholder="Ответ поддержки..."></textarea>
+    <div style="display:flex;justify-content:flex-end;margin-top:8px">
+      <button onclick="sendReply()" class="btn">Ответить</button>
+    </div>
+  </div>
 </div>
 </div>
 </div>
 
+<div class="modal" id="authModal">
+<div class="box">
+<h3>Вход</h3>
+<input id="email" placeholder="Email">
+<input id="password" type="password" placeholder="Пароль">
+<button onclick="login()" class="btn" style="width:100%">Войти</button>
+</div>
 </div>
 
 <script>
-const firebaseConfig={
-apiKey:"AIzaSyAoTaDDCB-TUZzSlRuUKvnQ8QcJPQdERFE",
-authDomain:"sd-premium-b3b78.firebaseapp.com",
-projectId:"sd-premium-b3b78"
+const firebaseConfig = {
+ apiKey:"AIzaSyAoTaDDCB-TUZzSlRuUKvnQ8QcJPQdERFE",
+ authDomain:"sd-premium-b3b78.firebaseapp.com",
+ projectId:"sd-premium-b3b78",
+ storageBucket:"sd-premium-b3b78.firebasestorage.app",
+ messagingSenderId:"475471999638",
+ appId:"1:475471999638:web:360d369103612e96f6c8b7"
 };
 firebase.initializeApp(firebaseConfig);
-const auth=firebase.auth();
-const db=firebase.firestore();
+const auth=firebase.auth(), db=firebase.firestore();
 
-const loginBtn=document.getElementById('loginBtn');
-const logoutBtn=document.getElementById('logoutBtn');
-const staffName=document.getElementById('staffName');
-const ticketsEl=document.getElementById('tickets');
-const emptyView=document.getElementById('emptyView');
-const ticketView=document.getElementById('ticketView');
-const tSubject=document.getElementById('tSubject');
-const tMeta=document.getElementById('tMeta');
-const tDesc=document.getElementById('tDesc');
-const tFile=document.getElementById('tFile');
-const commentsEl=document.getElementById('comments');
-const replyText=document.getElementById('replyText');
-const replyFile=document.getElementById('replyFile');
-const sendReply=document.getElementById('sendReply');
-const deleteBtn=document.getElementById('deleteBtn');
-const statusSelect=document.getElementById('statusSelect');
-const statusFilter=document.getElementById('statusFilter');
-const search=document.getElementById('search');
-
-let currentUser=null;
-let staffDoc=null;
-let allTickets=[];
-let selected=null;
-
-loginBtn.onclick=()=>auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-logoutBtn.onclick=()=>auth.signOut();
+let currentUser=null, currentDoc=null, currentTicket=null;
 
 auth.onAuthStateChanged(async u=>{
-currentUser=u;
-if(u){
-loginBtn.style.display='none';
-logoutBtn.style.display='inline-flex';
-const doc=await db.collection('users').doc(u.uid).get();
-staffDoc=doc.data();
-if(!staffDoc?.isStaff){alert("Нет доступа");return;}
-staffName.textContent=staffDoc.name||u.email;
-loadTickets();
-}else{
-loginBtn.style.display='inline-flex';
-logoutBtn.style.display='none';
-staffName.textContent="Гость";
-}
+ currentUser=u;
+ if(u){
+  loginBtn.style.display="none";
+  logoutBtn.style.display="inline-flex";
+  const d=await db.collection("users").doc(u.uid).get();
+  currentDoc=d.data();
+  staffName.textContent=currentDoc.name||u.email;
+  staffStatus.textContent="Сотрудник поддержки";
+  loadTickets();
+ }else{
+  loginBtn.style.display="inline-flex";
+  logoutBtn.style.display="none";
+  staffName.textContent="Гость";
+ }
 });
 
-async function loadTickets(){
-allTickets=[];
-ticketsEl.innerHTML='';
-const users=await db.collection('users').get();
-for(const u of users.docs){
-const userData=u.data();
-const snap=await db.collection('users').doc(u.id).collection('tickets').get();
-snap.forEach(d=>{
-const t=d.data();
-allTickets.push({
-id:d.id,
-uid:u.id,
-subject:t.subject,
-desc:t.desc,
-status:t.status||'Новая',
-createdAt:t.createdAt,
-comments:t.comments||[],
-file:t.file||null,
-userName:userData.name||'Без имени',
-userAvatar:userData.avatar||null
-});
-});
-}
-renderTickets();
+loginBtn.onclick=()=>authModal.style.display="flex";
+logoutBtn.onclick=()=>auth.signOut();
+
+async function login(){
+ await auth.signInWithEmailAndPassword(email.value,password.value);
+ authModal.style.display="none";
 }
 
-function renderTickets(){
-ticketsEl.innerHTML='';
-const f=statusFilter.value;
-const q=search.value.toLowerCase();
-allTickets
-.filter(t=>(f==='all'||t.status===f))
-.filter(t=>t.subject.toLowerCase().includes(q)||t.userName.toLowerCase().includes(q))
-.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))
-.forEach(t=>{
-const d=document.createElement('div');
-d.className='ticket'+(selected&&selected.id===t.id?' active':'');
-d.innerHTML=`<b>${t.subject}</b>
-<div class="small">${t.userName} · ${t.status}</div>`;
-d.onclick=()=>openTicket(t);
-ticketsEl.appendChild(d);
-});
+function loadTickets(){
+ db.collection("tickets").onSnapshot(async snap=>{
+  ticketsList.innerHTML="";
+  for(const d of snap.docs){
+    const t=d.data();
+    let uname="Пользователь";
+    if(t.userId){
+      const u=await db.collection("users").doc(t.userId).get();
+      if(u.exists) uname=u.data().name;
+    }
+    const div=document.createElement("div");
+    div.className="ticket "+(t.lastReplyRole==="user"?"new":"");
+    div.innerHTML=`<b>${t.subject}</b><div class="small">${uname} · ${t.status||""}</div>`;
+    div.onclick=()=>openTicket(d.id,t,uname);
+    ticketsList.appendChild(div);
+  }
+ });
 }
 
-function openTicket(t){
-selected=t;
-emptyView.style.display='none';
-ticketView.style.display='block';
-tSubject.textContent=t.subject;
-tMeta.textContent=t.userName+" · "+t.status;
-tDesc.textContent=t.desc;
-statusSelect.value=t.status;
-renderComments(t.comments);
-if(t.file){
-tFile.innerHTML=`<a href="${t.file}" target="_blank" class="file-link">📎 Вложение пользователя</a>`;
-}else tFile.innerHTML='';
-renderTickets();
+function openTicket(id,t,uname){
+ currentTicket={id,...t};
+ empty.style.display="none";
+ view.style.display="block";
+ vTitle.textContent=t.subject;
+ vMeta.textContent=uname+" · "+(t.status||"");
+ vDesc.textContent=t.desc;
+ renderComments(t.comments||[],uname);
 }
 
-function renderComments(arr){
-commentsEl.innerHTML='';
-arr.forEach(c=>{
-const d=document.createElement('div');
-d.className='comment';
-d.innerHTML=`
-<div class="small">${c.byName||'Пользователь'} ${c.role==='staff'?'<span class="staff">(Сотрудник поддержки)</span>':''}</div>
-<div>${c.text}</div>
-${c.file?`<a href="${c.file}" target="_blank" class="file-link">📎 Вложение</a>`:''}
-`;
-commentsEl.appendChild(d);
-});
+function renderComments(arr,uname){
+ vComments.innerHTML="";
+ arr.forEach(c=>{
+  const d=document.createElement("div");
+  d.className="comment";
+  d.innerHTML=`<div class="small">${c.role==="staff"?"<span class='staff'>"+c.byName+"</span>":"<b>"+uname+"</b>"}</div>
+  <div>${c.text||""}</div>
+  ${c.fileUrl?`<a class="attach" target="_blank" href="${c.fileUrl}">📎 Вложение</a>`:""}`;
+  vComments.appendChild(d);
+ });
 }
 
-sendReply.onclick=async()=>{
-if(!selected)return;
-let file=null;
-if(replyFile.files[0]){
-const r=new FileReader();
-r.onload=async()=>{file=r.result;await sendComment(file)};
-r.readAsDataURL(replyFile.files[0]);
-}else await sendComment(null);
-};
-
-async function sendComment(file){
-const ref=db.collection('users').doc(selected.uid).collection('tickets').doc(selected.id);
-const c={
-text:replyText.value,
-at:new Date().toISOString(),
-byName:staffDoc.name,
-avatar:staffDoc.avatar||null,
-role:'staff',
-file:file
-};
-await ref.update({
-comments:firebase.firestore.FieldValue.arrayUnion(c),
-status:statusSelect.value
-});
-replyText.value='';
-replyFile.value='';
-loadTickets();
+async function sendReply(){
+ const text=replyText.value.trim();
+ if(!text)return;
+ await db.collection("tickets").doc(currentTicket.id).update({
+  comments: firebase.firestore.FieldValue.arrayUnion({
+    text,at:new Date().toISOString(),
+    role:"staff",
+    byName:currentDoc.name
+  }),
+  lastReplyRole:"staff"
+ });
+ replyText.value="";
 }
 
-deleteBtn.onclick=async()=>{
-if(!confirm("Удалить заявку?"))return;
-await db.collection('users').doc(selected.uid).collection('tickets').doc(selected.id).delete();
-ticketView.style.display='none';
-emptyView.style.display='block';
-loadTickets();
-};
+async function setStatus(s){
+ await db.collection("tickets").doc(currentTicket.id).update({status:s});
+}
 
-statusSelect.onchange=async()=>{
-const ref=db.collection('users').doc(selected.uid).collection('tickets').doc(selected.id);
-await ref.update({status:statusSelect.value});
-loadTickets();
-};
-
-statusFilter.onchange=renderTickets;
-search.oninput=renderTickets;
+async function deleteTicket(){
+ if(confirm("Удалить заявку?")){
+  await db.collection("tickets").doc(currentTicket.id).delete();
+  view.style.display="none";
+ }
+}
 </script>
 </body>
 </html>
